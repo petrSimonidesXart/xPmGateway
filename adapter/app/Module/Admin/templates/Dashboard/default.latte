@@ -1,0 +1,75 @@
+{block title}Dashboard{/block}
+
+{block content}
+<h2>Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">{$pendingJobs}</h5>
+                <p class="card-text">Pending jobů</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">{$failedJobs}</h5>
+                <p class="card-text">Selhané (24h)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <h5 class="card-title">{$totalJobsToday}</h5>
+                <p class="card-text">Jobů dnes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success">
+            <div class="card-body">
+                <h5 class="card-title">{$activeClients}</h5>
+                <p class="card-text">Aktivních klientů</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h4>Poslední joby</h4>
+        <table class="table table-sm">
+            <thead><tr><th>ID</th><th>Tool</th><th>Status</th><th>Vytvořen</th></tr></thead>
+            <tbody>
+            {foreach $recentJobs as $job}
+                <tr>
+                    <td><a href="{plink :Admin:Job:detail $job->id}">{$job->id|truncate:8}</a></td>
+                    <td>{$job->ref('tools', 'tool_id')?->name}</td>
+                    <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
+                    <td>{$job->created_at|date:'d.m.Y H:i'}</td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h4>Poslední aktivita</h4>
+        <table class="table table-sm">
+            <thead><tr><th>Akce</th><th>Klient</th><th>Status</th><th>Čas</th></tr></thead>
+            <tbody>
+            {foreach $recentActivity as $log}
+                <tr>
+                    <td>{$log->action}</td>
+                    <td>{$log->client_name}</td>
+                    <td>{$log->result_status}</td>
+                    <td>{$log->created_at|date:'d.m.Y H:i'}</td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+    </div>
+</div>
+{/block}

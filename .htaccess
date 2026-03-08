@@ -1,0 +1,9 @@
+# Root .htaccess - route all requests to adapter/www/
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Block access to everything except adapter/www/
+    RewriteCond %{REQUEST_URI} !^/adapter/www/
+    RewriteRule ^(.*)$ adapter/www/$1 [L]
+</IfModule>

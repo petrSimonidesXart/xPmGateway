@@ -1,0 +1,21 @@
+# PHP
+/adapter/vendor/
+/adapter/storage/temp/
+/adapter/storage/log/*
+!/adapter/storage/log/.gitkeep
+/adapter/storage/screenshots/*
+!/adapter/storage/screenshots/.gitkeep
+/adapter/config/local.neon
+
+# Node.js
+/worker/node_modules/
+/worker/dist/
+/worker/.env
+
+# Environment files
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp

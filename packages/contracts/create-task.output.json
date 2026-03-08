@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "create-task.output",
+    "type": "object",
+    "properties": {
+        "mode": {
+            "type": "string",
+            "enum": ["done", "queued"]
+        },
+        "job_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "task_id": {
+            "type": "string"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "success", "failed"]
+        }
+    },
+    "required": ["mode", "status"],
+    "additionalProperties": false
+}

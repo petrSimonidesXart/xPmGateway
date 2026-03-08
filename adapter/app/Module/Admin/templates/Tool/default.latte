@@ -1,0 +1,25 @@
+{block title}Tooly{/block}
+
+{block content}
+<h2>MCP Tooly</h2>
+
+<table class="table">
+    <thead><tr><th>Název</th><th>Popis</th><th>Aktivní</th><th></th></tr></thead>
+    <tbody>
+    {foreach $tools as $tool}
+        <tr>
+            <td><code>{$tool->name}</code></td>
+            <td>{$tool->description}</td>
+            <td>{if $tool->is_active}<span class="badge bg-success">Ano</span>{else}<span class="badge bg-secondary">Ne</span>{/if}</td>
+            <td>
+                {if $isAdmin}
+                    <a href="{plink toggle! id => $tool->id}" class="btn btn-sm btn-outline-{if $tool->is_active}warning{else}success{/if}">
+                        {if $tool->is_active}Deaktivovat{else}Aktivovat{/if}
+                    </a>
+                {/if}
+            </td>
+        </tr>
+    {/foreach}
+    </tbody>
+</table>
+{/block}

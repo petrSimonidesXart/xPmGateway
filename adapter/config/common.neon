@@ -1,0 +1,27 @@
+parameters:
+    legacyPm:
+        baseUrl: ''
+    security:
+        encryptionKey: ''
+        internalApiSecret: ''
+        rateLimitPerMinute: 60
+    alerting:
+        email: ''
+    smtp:
+        host: localhost
+        port: 25
+        user: ''
+        password: ''
+
+application:
+    errorPresenter: Error
+    mapping:
+        *: App\Module\*\Presenters\*Presenter
+
+session:
+    expiration: 14 days
+
+database:
+    dsn: 'mysql:host=localhost;dbname=pm_gateway'
+    user: null
+    password: null

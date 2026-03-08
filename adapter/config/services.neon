@@ -1,0 +1,51 @@
+services:
+    router: App\Router\RouterFactory::createRouter
+
+    # Services
+    - App\Model\Service\AuthService
+    - App\Model\Service\JobService
+    - App\Model\Service\AuditService
+    - App\Model\Service\SchemaValidator
+
+    encryptionService:
+        factory: App\Model\Service\EncryptionService(%security.encryptionKey%)
+
+    rateLimitService:
+        factory: App\Model\Service\RateLimitService
+        arguments:
+            rateLimitPerMinute: %security.rateLimitPerMinute%
+
+    alertService:
+        factory: App\Model\Service\AlertService
+        arguments:
+            alertEmail: %alerting.email%
+
+    # Mailer
+    mailer:
+        factory: Nette\Mail\SmtpMailer
+        arguments:
+            host: %smtp.host%
+            port: %smtp.port%
+            username: %smtp.user%
+            password: %smtp.password%
+
+    # Repositories
+    - App\Model\Repository\ClientRepository
+    - App\Model\Repository\ApiTokenRepository
+    - App\Model\Repository\ServiceAccountRepository
+    - App\Model\Repository\ToolRepository
+    - App\Model\Repository\ClientPermissionRepository
+    - App\Model\Repository\JobRepository
+    - App\Model\Repository\AuditLogRepository
+    - App\Model\Repository\RateLimitRepository
+    - App\Model\Repository\AdminUserRepository
+
+    # Facades
+    - App\Model\Facade\McpFacade
+    - App\Model\Facade\JobFacade
+
+    # Internal API - inject secret
+    -
+        factory: App\Module\Internal\Presenters\JobsPresenter
+        arguments:
+            internalApiSecret: %security.internalApiSecret%

@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "list-my-recent-jobs.input",
+    "type": "object",
+    "properties": {
+        "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+        },
+        "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "success", "failed", "timeout"]
+        },
+        "tool_name": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": false
+}

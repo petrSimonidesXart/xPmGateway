@@ -1,0 +1,24 @@
+parameters:
+    database:
+        host: %env.DB_HOST%
+        name: %env.DB_NAME%
+        user: %env.DB_USER%
+        password: %env.DB_PASSWORD%
+    legacyPm:
+        baseUrl: %env.LEGACY_PM_BASE_URL%
+    security:
+        encryptionKey: %env.ENCRYPTION_KEY%
+        internalApiSecret: %env.INTERNAL_API_SECRET%
+        rateLimitPerMinute: %env.RATE_LIMIT_PER_MINUTE%
+    alerting:
+        email: %env.ALERT_EMAIL%
+    smtp:
+        host: %env.SMTP_HOST%
+        port: %env.SMTP_PORT%
+        user: %env.SMTP_USER%
+        password: %env.SMTP_PASSWORD%
+
+database:
+    dsn: 'mysql:host=%database.host%;dbname=%database.name%'
+    user: %database.user%
+    password: %database.password%

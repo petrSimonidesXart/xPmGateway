@@ -1,0 +1,30 @@
+{block title}Klienti{/block}
+
+{block content}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Klienti</h2>
+    {if $isAdmin}
+        <a href="{plink create}" class="btn btn-primary">Nový klient</a>
+    {/if}
+</div>
+
+<table class="table">
+    <thead><tr><th>Název</th><th>Service Account</th><th>Aktivní</th><th>Vytvořen</th><th></th></tr></thead>
+    <tbody>
+    {foreach $clients as $client}
+        <tr>
+            <td><a href="{plink detail $client->id}">{$client->name}</a></td>
+            <td>{$client->ref('service_accounts', 'service_account_id')?->name}</td>
+            <td>{if $client->is_active}<span class="badge bg-success">Ano</span>{else}<span class="badge bg-secondary">Ne</span>{/if}</td>
+            <td>{$client->created_at|date:'d.m.Y'}</td>
+            <td>
+                {if $isAdmin}
+                    <a href="{plink edit $client->id}" class="btn btn-sm btn-outline-primary">Upravit</a>
+                    <a href="{plink :Admin:Token:default $client->id}" class="btn btn-sm btn-outline-secondary">Tokeny</a>
+                {/if}
+            </td>
+        </tr>
+    {/foreach}
+    </tbody>
+</table>
+{/block}

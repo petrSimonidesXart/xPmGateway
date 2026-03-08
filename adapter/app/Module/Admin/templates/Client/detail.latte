@@ -1,0 +1,33 @@
+{block title}Klient: {$client->name}{/block}
+
+{block content}
+<h2>{$client->name}</h2>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Popis</dt>
+            <dd class="col-sm-9">{$client->description ?? '—'}</dd>
+            <dt class="col-sm-3">Service Account</dt>
+            <dd class="col-sm-9">{$client->ref('service_accounts', 'service_account_id')?->name}</dd>
+            <dt class="col-sm-3">Aktivní</dt>
+            <dd class="col-sm-9">{if $client->is_active}Ano{else}Ne{/if}</dd>
+            <dt class="col-sm-3">IP Whitelist</dt>
+            <dd class="col-sm-9">{$client->allowed_ips ?? 'Bez omezení'}</dd>
+            <dt class="col-sm-3">Oprávnění</dt>
+            <dd class="col-sm-9">
+                {foreach $tools as $tool}
+                    {if isset($permissions[$tool->id])}
+                        <span class="badge bg-primary">{$tool->name}</span>
+                    {/if}
+                {/foreach}
+            </dd>
+        </dl>
+    </div>
+</div>
+
+{if $isAdmin}
+    <a href="{plink edit $client->id}" class="btn btn-primary">Upravit</a>
+    <a href="{plink :Admin:Token:default $client->id}" class="btn btn-outline-secondary">Spravovat tokeny</a>
+{/if}
+{/block}
