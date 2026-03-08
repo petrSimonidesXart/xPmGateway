@@ -20,8 +20,8 @@
             <td><code>{$token->token_prefix}...</code></td>
             <td>{$token->label ?? '—'}</td>
             <td>{$token->created_at|date:'d.m.Y H:i'}</td>
-            <td>{$token->last_used_at ? $token->last_used_at|date:'d.m.Y H:i' : '—'}</td>
-            <td>{$token->expires_at ? $token->expires_at|date:'d.m.Y' : 'Neexpiruje'}</td>
+            <td>{if $token->last_used_at}{$token->last_used_at|date:'d.m.Y H:i'}{else}—{/if}</td>
+            <td>{if $token->expires_at}{$token->expires_at|date:'d.m.Y'}{else}Neexpiruje{/if}</td>
             <td>
                 {if $token->revoked_at}
                     <span class="badge bg-danger">Revokován</span>

@@ -126,4 +126,4 @@ INSERT INTO `tools` (`name`, `description`) VALUES
 
 -- Seed default admin user (password: admin123 - CHANGE IN PRODUCTION!)
 INSERT INTO `admin_users` (`username`, `password_hash`, `role`) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+('admin', '$2y$12$AcwJtnrM8MzskTjS06fZv.YT2AL/oGleRxl2w.fIYFI1M2lGf3Nle', 'admin');

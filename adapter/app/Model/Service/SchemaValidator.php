@@ -31,7 +31,7 @@ class SchemaValidator
 		}
 
 		$schemaContent = json_decode(file_get_contents($schemaPath));
-		$dataObject = json_decode(json_encode($data));
+		$dataObject = json_decode(json_encode($data ?: new \stdClass()));
 
 		$result = $this->validator->validate($dataObject, $schemaContent);
 

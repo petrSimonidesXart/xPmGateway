@@ -19,9 +19,9 @@
             <dt class="col-sm-3">Vytvořen</dt>
             <dd class="col-sm-9">{$job->created_at|date:'d.m.Y H:i:s'}</dd>
             <dt class="col-sm-3">Zahájen</dt>
-            <dd class="col-sm-9">{$job->started_at ? $job->started_at|date:'d.m.Y H:i:s' : '—'}</dd>
+            <dd class="col-sm-9">{if $job->started_at}{$job->started_at|date:'d.m.Y H:i:s'}{else}—{/if}</dd>
             <dt class="col-sm-3">Dokončen</dt>
-            <dd class="col-sm-9">{$job->finished_at ? $job->finished_at|date:'d.m.Y H:i:s' : '—'}</dd>
+            <dd class="col-sm-9">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</dd>
         </dl>
     </div>
 </div>

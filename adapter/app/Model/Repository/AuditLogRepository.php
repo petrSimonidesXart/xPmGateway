@@ -28,9 +28,7 @@ class AuditLogRepository extends BaseRepository
 		int $offset = 0,
 	): Selection
 	{
-		$query = $this->getTable()
-			->order('created_at DESC')
-			->limit($limit, $offset);
+		$query = $this->getTable();
 
 		if ($clientId !== null) {
 			$query->where('client_id', $clientId);
@@ -45,6 +43,6 @@ class AuditLogRepository extends BaseRepository
 			$query->where('created_at <= ?', $dateTo);
 		}
 
-		return $query;
+		return $query->order('created_at DESC')->limit($limit, $offset);
 	}
 }

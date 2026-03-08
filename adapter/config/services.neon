@@ -13,21 +13,16 @@ services:
     rateLimitService:
         factory: App\Model\Service\RateLimitService
         arguments:
-            rateLimitPerMinute: %security.rateLimitPerMinute%
+            rateLimitPerMinute: int(%security.rateLimitPerMinute%)
 
     alertService:
         factory: App\Model\Service\AlertService
         arguments:
             alertEmail: %alerting.email%
 
-    # Mailer
-    mailer:
-        factory: Nette\Mail\SmtpMailer
-        arguments:
-            host: %smtp.host%
-            port: %smtp.port%
-            username: %smtp.user%
-            password: %smtp.password%
+    # Mailer - override built-in mail.mailer
+    mail.mailer:
+        factory: Nette\Mail\SmtpMailer(%smtp.host%, %smtp.user%, %smtp.password%, int(%smtp.port%))
 
     # Repositories
     - App\Model\Repository\ClientRepository

@@ -44,7 +44,7 @@
             <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
             <td>{$job->attempts}/{$job->max_attempts}</td>
             <td>{$job->created_at|date:'d.m.Y H:i:s'}</td>
-            <td>{$job->finished_at ? $job->finished_at|date:'d.m.Y H:i:s' : '—'}</td>
+            <td>{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</td>
         </tr>
     {/foreach}
     </tbody>

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Model\Service;
 
-use Nette\Database\Table\ActiveRow;
 use Nette\Mail\Message;
 use Nette\Mail\Mailer;
 
@@ -16,14 +15,14 @@ class AlertService
 	}
 
 
-	public function sendJobFailedAlert(ActiveRow $job): void
+	public function sendJobFailedAlert(object $job): void
 	{
 		if ($this->alertEmail === '') {
 			return;
 		}
 
 		$mail = new Message();
-		$mail->setFrom('pm-gateway@localhost', 'PM Gateway')
+		$mail->setFrom('pm-gateway@pm-gateway.local', 'PM Gateway')
 			->addTo($this->alertEmail)
 			->setSubject("PM Gateway: Job failed [{$job->id}]")
 			->setBody(implode("\n", [

@@ -19,7 +19,7 @@ class AuditLogPresenter extends BasePresenter
 	public function renderDefault(): void
 	{
 		$clientId = $this->getParameter('client_id') ? (int) $this->getParameter('client_id') : null;
-		$action = $this->getParameter('action');
+		$action = $this->getParameter('audit_action') ?: null;
 		$dateFrom = $this->getParameter('date_from') ? new \DateTime($this->getParameter('date_from')) : null;
 		$dateTo = $this->getParameter('date_to') ? new \DateTime($this->getParameter('date_to') . ' 23:59:59') : null;
 

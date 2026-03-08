@@ -9,13 +9,13 @@
 <table class="table">
     <thead><tr><th>Username</th><th>Role</th><th>Aktivní</th><th>Poslední login</th><th></th></tr></thead>
     <tbody>
-    {foreach $users as $user}
+    {foreach $users as $adminUser}
         <tr>
-            <td>{$user->username}</td>
-            <td><span class="badge bg-{$user->role === 'admin' ? 'primary' : 'secondary'}">{$user->role}</span></td>
-            <td>{if $user->is_active}<span class="badge bg-success">Ano</span>{else}<span class="badge bg-secondary">Ne</span>{/if}</td>
-            <td>{$user->last_login_at ? $user->last_login_at|date:'d.m.Y H:i' : '—'}</td>
-            <td><a href="{plink edit $user->id}" class="btn btn-sm btn-outline-primary">Upravit</a></td>
+            <td>{$adminUser->username}</td>
+            <td><span class="badge bg-{$adminUser->role === 'admin' ? 'primary' : 'secondary'}">{$adminUser->role}</span></td>
+            <td>{if $adminUser->is_active}<span class="badge bg-success">Ano</span>{else}<span class="badge bg-secondary">Ne</span>{/if}</td>
+            <td>{if $adminUser->last_login_at}{$adminUser->last_login_at|date:'d.m.Y H:i'}{else}—{/if}</td>
+            <td><a href="{plink edit $adminUser->id}" class="btn btn-sm btn-outline-primary">Upravit</a></td>
         </tr>
     {/foreach}
     </tbody>

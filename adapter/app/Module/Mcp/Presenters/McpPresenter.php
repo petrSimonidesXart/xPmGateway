@@ -35,13 +35,12 @@ class McpPresenter extends Presenter
 		$method = $this->getHttpRequest()->getMethod();
 
 		if ($method === 'GET') {
-			// SSE endpoint for MCP
-			$this->handleSse();
+			$this->processSse();
 			return;
 		}
 
 		if ($method === 'POST') {
-			$this->handleJsonRpc();
+			$this->processJsonRpc();
 			return;
 		}
 
@@ -49,7 +48,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function handleSse(): void
+	private function processSse(): void
 	{
 		$response = $this->getHttpResponse();
 		$response->setContentType('text/event-stream');
@@ -79,7 +78,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function handleJsonRpc(): void
+	private function processJsonRpc(): void
 	{
 		$body = file_get_contents('php://input');
 		$request = Json::decode($body, forceArrays: true);
@@ -95,9 +94,9 @@ class McpPresenter extends Presenter
 
 		try {
 			$result = match ($method) {
-				'initialize' => $this->handleInitialize($params),
-				'tools/list' => $this->handleToolsList(),
-				'tools/call' => $this->handleToolsCall($params),
+				'initialize' => $this->processInitialize($params),
+				'tools/list' => $this->processToolsList(),
+				'tools/call' => $this->processToolsCall($params),
 				default => throw new McpException("Method not found: {$method}", 404),
 			};
 
@@ -119,7 +118,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function handleInitialize(array $params): array
+	private function processInitialize(array $params): array
 	{
 		return [
 			'protocolVersion' => '2024-11-05',
@@ -134,7 +133,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function handleToolsList(): array
+	private function processToolsList(): array
 	{
 		$tools = $this->toolRepository->findAllActive();
 		$result = [];
@@ -158,7 +157,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function handleToolsCall(array $params): array
+	private function processToolsCall(array $params): array
 	{
 		$toolName = $params['name'] ?? '';
 		$arguments = $params['arguments'] ?? [];
