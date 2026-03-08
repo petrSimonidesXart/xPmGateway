@@ -48,6 +48,12 @@ class JobService
 	}
 
 
+	public function findById(string $jobId): ?ActiveRow
+	{
+		return $this->jobRepository->findById($jobId);
+	}
+
+
 	public function getNextPendingJob(): ?ActiveRow
 	{
 		return $this->jobRepository->findNextPending();

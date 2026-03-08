@@ -125,7 +125,7 @@ class McpFacade
 
 	private function handleGetJobStatus(ActiveRow $client, ActiveRow $token, array $params): array
 	{
-		$job = $this->jobService->jobRepository->findById($params['job_id']);
+		$job = $this->jobService->findById($params['job_id']);
 
 		if (!$job || $job->client_id !== $client->id) {
 			throw new McpException('Job not found', 404);

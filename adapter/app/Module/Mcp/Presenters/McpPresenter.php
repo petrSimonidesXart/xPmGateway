@@ -111,6 +111,8 @@ class McpPresenter extends Presenter
 				default => -32000,
 			};
 			$this->sendJsonRpcError($id, $code, $e->getMessage());
+		} catch (\Nette\Application\AbortException $e) {
+			throw $e;
 		} catch (\Throwable $e) {
 			\Tracy\Debugger::log($e);
 			$this->sendJsonRpcError($id, -32603, 'Internal error');
@@ -199,7 +201,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function sendJsonRpcResponse(?string $id, array $result): void
+	private function sendJsonRpcResponse(string|int|null $id, array $result): void
 	{
 		$this->sendJsonResponse([
 			'jsonrpc' => '2.0',
@@ -209,7 +211,7 @@ class McpPresenter extends Presenter
 	}
 
 
-	private function sendJsonRpcError(?string $id, int $code, string $message): void
+	private function sendJsonRpcError(string|int|null $id, int $code, string $message): void
 	{
 		$this->sendJsonResponse([
 			'jsonrpc' => '2.0',
