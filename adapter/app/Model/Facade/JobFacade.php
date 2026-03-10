@@ -54,7 +54,7 @@ class JobFacade
 	 */
 	public function handleJobResult(string $jobId, string $status, ?array $result = null, ?string $error = null, ?array $screenshots = null): void
 	{
-		$job = $this->jobService->jobRepository->findById($jobId);
+		$job = $this->jobService->findById($jobId);
 		if (!$job) {
 			throw new McpException('Job not found', 404);
 		}
@@ -65,7 +65,7 @@ class JobFacade
 			$this->jobService->failJob($jobId, $error ?? 'Unknown error', $screenshots);
 
 			// Refresh job to get updated state
-			$job = $this->jobService->jobRepository->findById($jobId);
+			$job = $this->jobService->findById($jobId);
 			if ($job && $job->status === 'failed') {
 				$this->alertService->sendJobFailedAlert($job);
 			}

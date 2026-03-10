@@ -33,6 +33,10 @@ class AlertService
 				"Time: {$job->finished_at}",
 			]));
 
-		$this->mailer->send($mail);
+		try {
+			$this->mailer->send($mail);
+		} catch (\Throwable $e) {
+			\Tracy\Debugger::log($e, \Tracy\ILogger::WARNING);
+		}
 	}
 }

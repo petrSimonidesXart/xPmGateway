@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { AdapterApi } from './lib/api.js';
 import { handleCreateTask } from './handlers/createTask.js';
+import { handleVerifyCredentials } from './handlers/verifyCredentials.js';
 
 const api = new AdapterApi(
     process.env.ADAPTER_API_URL!,
@@ -25,6 +26,7 @@ type JobHandler = (job: Job, api: AdapterApi) => Promise<void>;
 
 const handlers: Record<string, JobHandler> = {
     create_task: handleCreateTask,
+    verify_credentials: handleVerifyCredentials,
 };
 
 async function pollLoop(): Promise<void> {
