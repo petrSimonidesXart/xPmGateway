@@ -1,0 +1,13 @@
+{
+    "type": "object",
+    "properties": {
+        "filter_url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "URL of the filter page with parameters, e.g. '?path_info=tasks&filter[project]=5' or full URL"
+        }
+    },
+    "required": ["filter_url"],
+    "additionalProperties": false
+}

@@ -5,6 +5,7 @@ namespace App\Module\Internal\Presenters;
 
 use App\Model\Facade\JobFacade;
 use App\Model\Facade\McpException;
+use App\Model\Service\ArtifactService;
 use Nette\Application\UI\Presenter;
 use Nette\Utils\Json;
 
@@ -16,6 +17,7 @@ class JobsPresenter extends Presenter
 {
 	public function __construct(
 		private JobFacade $jobFacade,
+		private ArtifactService $artifactService,
 		private string $internalApiSecret,
 	) {
 		parent::__construct();
@@ -64,6 +66,37 @@ class JobsPresenter extends Presenter
 			$this->sendJson(['ok' => true]);
 		} catch (McpException $e) {
 			$this->getHttpResponse()->setCode($e->getHttpCode());
+			$this->sendJson(['error' => $e->getMessage()]);
+		}
+	}
+
+
+	/**
+	 * POST /api/internal/jobs/{id}/artifacts
+	 * Worker uploads an artifact file.
+	 */
+	public function actionArtifacts(string $id): void
+	{
+		$file = $this->getHttpRequest()->getFile('file');
+		if (!$file) {
+			$this->getHttpResponse()->setCode(400);
+			$this->sendJson(['error' => 'No file uploaded']);
+			return;
+		}
+
+		$mimeType = $this->getHttpRequest()->getPost('mime_type');
+		$metadataRaw = $this->getHttpRequest()->getPost('metadata');
+		$metadata = $metadataRaw ? Json::decode($metadataRaw, forceArrays: true) : null;
+
+		try {
+			$artifact = $this->artifactService->storeFromUpload($id, $file, $mimeType, $metadata);
+			$this->sendJson([
+				'artifact_id' => $artifact->id,
+				'filename' => $artifact->filename,
+				'size_bytes' => $artifact->size_bytes,
+			]);
+		} catch (\Throwable $e) {
+			$this->getHttpResponse()->setCode(500);
 			$this->sendJson(['error' => $e->getMessage()]);
 		}
 	}

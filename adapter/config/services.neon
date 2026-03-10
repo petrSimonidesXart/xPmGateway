@@ -20,6 +20,11 @@ services:
         arguments:
             alertEmail: %alerting.email%
 
+    artifactService:
+        factory: App\Model\Service\ArtifactService
+        arguments:
+            storageDir: %appDir%/../storage
+
     # Mailer - override built-in mail.mailer
     mail.mailer:
         factory: Nette\Mail\SmtpMailer(%smtp.host%, %smtp.user%, %smtp.password%, int(%smtp.port%))
@@ -34,6 +39,7 @@ services:
     - App\Model\Repository\AuditLogRepository
     - App\Model\Repository\RateLimitRepository
     - App\Model\Repository\AdminUserRepository
+    - App\Model\Repository\ArtifactRepository
 
     # Facades
     - App\Model\Facade\McpFacade

@@ -1,0 +1,344 @@
+openapi: 3.1.0
+info:
+  title: PM Gateway REST API
+  description: |
+    REST API for PM Gateway — create tasks, run automations, and retrieve results
+    from the legacy project management system. Designed for ChatGPT Actions,
+    Make.com, n8n, Zapier, and other HTTP-based integrations.
+  version: 1.0.0
+
+servers:
+  - url: https://pm-gateway.example.com
+    description: Production
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Artifact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+          example: export-2026-03.csv
+        mime_type:
+          type: string
+          example: text/csv
+        size_bytes:
+          type: integer
+          example: 45230
+        download_url:
+          type: string
+          format: uri
+          example: /api/v1/artifacts/abc-123/download
+        created_at:
+          type: string
+          format: date-time
+
+    JobResult:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [done, queued]
+          description: "'done' = completed within timeout, 'queued' = still processing"
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, success, failed, timeout]
+        result:
+          type: object
+          description: Tool-specific output data
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+          description: Output files produced by the tool
+
+    JobStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, processing, success, failed, timeout]
+        result:
+          type: object
+        error:
+          type: string
+        finished_at:
+          type: string
+          format: date-time
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  /api/v1/tools/create_task:
+    post:
+      operationId: createTask
+      summary: Create a task in the legacy PM system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, project]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: Task title
+                project:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: Project name
+                assignee:
+                  type: string
+                  maxLength: 200
+                  description: Email of the assignee
+                due_date:
+                  type: string
+                  format: date
+                  description: Due date (YYYY-MM-DD)
+                estimate_hours:
+                  type: number
+                  minimum: 0
+                  maximum: 10000
+                  description: Estimated hours
+      responses:
+        '200':
+          description: Task created or queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResult'
+        '401':
+          description: Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/tools/get_task:
+    post:
+      operationId: getTask
+      summary: Look up a task by ID
+      description: |
+        Enters the task ID into the PM system's direct lookup form.
+        Returns task details if found, or an error if not.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_id]
+              properties:
+                task_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  description: ID of the task to look up
+      responses:
+        '200':
+          description: Task lookup result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResult'
+
+  /api/v1/tools/export_filtered_tasks:
+    post:
+      operationId: exportFilteredTasks
+      summary: Export filtered tasks to CSV
+      description: |
+        Navigates to a filter URL in the PM system, applies the filter,
+        and exports matching tasks as a CSV file (artifact).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [filter_url]
+              properties:
+                filter_url:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+                  description: "Filter page URL with parameters, e.g. '?path_info=tasks&filter[project]=5'"
+      responses:
+        '200':
+          description: Export result with downloadable artifact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResult'
+
+  /api/v1/tools/{toolName}:
+    post:
+      operationId: executeTool
+      summary: Execute any registered tool
+      parameters:
+        - name: toolName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tool name (e.g. create_task, get_task, export_filtered_tasks)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Tool-specific input parameters
+      responses:
+        '200':
+          description: Tool executed or job queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResult'
+
+  /api/v1/jobs/{id}:
+    get:
+      operationId: getJobStatus
+      summary: Check job status and retrieve results
+      description: |
+        Use this to poll for job completion when the initial tool call
+        returned mode=queued. Includes artifacts (downloadable files)
+        when available.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/jobs:
+    get:
+      operationId: listRecentJobs
+      summary: List recent jobs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, success, failed, timeout]
+        - name: tool_name
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        job_id:
+                          type: string
+                          format: uuid
+                        tool_name:
+                          type: string
+                        status:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        finished_at:
+                          type: string
+                          format: date-time
+
+  /api/v1/artifacts/{id}/download:
+    get:
+      operationId: downloadArtifact
+      summary: Download an artifact file
+      description: Returns the raw file content with appropriate Content-Type header.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Artifact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

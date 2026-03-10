@@ -1,0 +1,35 @@
+{
+    "type": "object",
+    "properties": {
+        "mode": {
+            "type": "string",
+            "enum": ["done", "queued"]
+        },
+        "job_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "success", "failed"]
+        },
+        "result": {
+            "type": "object",
+            "properties": {
+                "found": { "type": "boolean" },
+                "task_id": { "type": "string" },
+                "title": { "type": "string" },
+                "status": { "type": "string" },
+                "assignee": { "type": "string" },
+                "project": { "type": "string" },
+                "due_date": { "type": "string" },
+                "priority": { "type": "string" },
+                "created": { "type": "string" },
+                "description": { "type": "string" },
+                "url": { "type": "string" },
+                "error": { "type": "string" }
+            }
+        }
+    },
+    "required": ["mode", "status"]
+}

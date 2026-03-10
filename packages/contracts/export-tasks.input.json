@@ -1,0 +1,24 @@
+{
+    "type": "object",
+    "properties": {
+        "project": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Project name to export tasks from"
+        },
+        "status": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "Filter by task status (optional, e.g. 'open', 'in_progress', 'done')"
+        },
+        "format": {
+            "type": "string",
+            "enum": ["csv", "json"],
+            "default": "csv",
+            "description": "Output format"
+        }
+    },
+    "required": ["project"],
+    "additionalProperties": false
+}

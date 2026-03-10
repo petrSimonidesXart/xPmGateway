@@ -1,0 +1,40 @@
+{
+    "type": "object",
+    "properties": {
+        "mode": {
+            "type": "string",
+            "enum": ["done", "queued"]
+        },
+        "job_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["pending", "processing", "success", "failed"]
+        },
+        "result": {
+            "type": "object",
+            "properties": {
+                "filename": { "type": "string" },
+                "artifact_id": { "type": "string", "format": "uuid" },
+                "size_bytes": { "type": "integer" },
+                "filter_url": { "type": "string" }
+            }
+        },
+        "artifacts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "filename": { "type": "string" },
+                    "mime_type": { "type": "string" },
+                    "size_bytes": { "type": "integer" },
+                    "download_url": { "type": "string", "format": "uri" }
+                }
+            }
+        }
+    },
+    "required": ["mode", "status"]
+}

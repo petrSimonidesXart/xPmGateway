@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import { AdapterApi } from './lib/api.js';
 import { handleCreateTask } from './handlers/createTask.js';
+import { handleExportFilteredTasks } from './handlers/exportFilteredTasks.js';
+import { handleExportTasks } from './handlers/exportTasks.js';
+import { handleGetTask } from './handlers/getTask.js';
 import { handleVerifyCredentials } from './handlers/verifyCredentials.js';
 
 const api = new AdapterApi(
@@ -26,6 +29,9 @@ type JobHandler = (job: Job, api: AdapterApi) => Promise<void>;
 
 const handlers: Record<string, JobHandler> = {
     create_task: handleCreateTask,
+    export_filtered_tasks: handleExportFilteredTasks,
+    export_tasks: handleExportTasks,
+    get_task: handleGetTask,
     verify_credentials: handleVerifyCredentials,
 };
 

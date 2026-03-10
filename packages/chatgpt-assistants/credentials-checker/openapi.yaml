@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: PM Gateway — Credential Checker
+  description: Verify service account credentials against the legacy PM system.
+  version: 1.0.0
+
+servers:
+  - url: https://VASE-DOMENA.example.com/adapter/www
+    description: "PM Gateway (změňte na skutečnou URL)"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API token vygenerovaný v Admin UI
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  /api/v1/tools/verify_credentials:
+    post:
+      operationId: verifyCredentials
+      summary: Ověření přihlašovacích údajů
+      description: |
+        Ověří, zda jsou přihlašovací údaje service accountu platné.
+        Pokusí se přihlásit do PM systému a vrátí výsledek.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              description: Tento tool nevyžaduje žádné vstupní parametry.
+      responses:
+        '200':
+          description: Výsledek ověření
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mode:
+                    type: string
+                    enum: [done, queued]
+                    description: "'done' = hotovo, 'queued' = stále se zpracovává"
+                  job_id:
+                    type: string
+                    format: uuid
+                    description: ID jobu pro pozdější dotazování
+                  status:
+                    type: string
+                    enum: [pending, processing, success, failed]
+                  result:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        description: "Výsledek — např. 'Credentials are valid'"
+        '401':
+          description: Neplatný token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Nedostatečná oprávnění
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Překročen rate limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/jobs/{id}:
+    get:
+      operationId: getJobStatus
+      summary: Zjistit stav jobu
+      description: |
+        Pokud verify_credentials vrátí mode=queued, použij tento endpoint
+        k dotazování na stav. Zkus znovu za pár sekund.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID jobu z předchozího volání
+      responses:
+        '200':
+          description: Stav jobu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [pending, processing, success, failed, timeout]
+                  result:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                  error:
+                    type: string
+                    description: Chybová zpráva (pokud failed)
+                  finished_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Job nenalezen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

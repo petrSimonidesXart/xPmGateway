@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Model\Facade;
 
 use App\Model\Repository\ToolRepository;
+use App\Model\Service\ArtifactService;
 use App\Model\Service\AuthService;
 use App\Model\Service\AuditService;
 use App\Model\Service\JobService;
@@ -20,6 +21,7 @@ class McpFacade
 		private RateLimitService $rateLimitService,
 		private SchemaValidator $schemaValidator,
 		private ToolRepository $toolRepository,
+		private ArtifactService $artifactService,
 	) {
 	}
 
@@ -52,8 +54,9 @@ class McpFacade
 			throw new McpException('Unknown tool', 404);
 		}
 
-		// Check permission
-		if (!$this->authService->hasToolPermission($client->id, $tool->id)) {
+		// Check permission — meta-tools (job status, job list) are always allowed
+		$metaTools = ['get_job_status', 'list_my_recent_jobs'];
+		if (!in_array($toolName, $metaTools, true) && !$this->authService->hasToolPermission($client->id, $tool->id)) {
 			$this->auditService->logMcpCall($client, $token, $toolName, 'denied');
 			throw new McpException('Permission denied for this tool', 403);
 		}
@@ -79,7 +82,7 @@ class McpFacade
 			'create_task' => $this->handleCreateTask($client, $token, $params),
 			'get_job_status' => $this->handleGetJobStatus($client, $token, $params),
 			'list_my_recent_jobs' => $this->handleListRecentJobs($client, $token, $params),
-			default => throw new McpException('Tool not implemented', 501),
+			default => $this->handleGenericTool($client, $token, $tool, $params),
 		};
 
 		$durationMs = (int) ((microtime(true) - $startTime) * 1000);
@@ -145,6 +148,12 @@ class McpFacade
 			$result['finished_at'] = $job->finished_at->format('c');
 		}
 
+		// Include artifacts if any
+		$artifacts = $this->artifactService->findByJobId($job->id);
+		if ($artifacts) {
+			$result['artifacts'] = $this->artifactService->formatForResponse($artifacts);
+		}
+
 		return $result;
 	}
 
@@ -174,13 +183,50 @@ class McpFacade
 	}
 
 
+	/**
+	 * Generic handler for any tool — creates a job and waits.
+	 * Used for tools that don't need special handling in the facade.
+	 */
+	private function handleGenericTool(ActiveRow $client, ActiveRow $token, ActiveRow $tool, array $params): array
+	{
+		$job = $this->jobService->createJob(
+			$client->id,
+			$client->service_account_id,
+			$tool->id,
+			$params,
+		);
+
+		$completed = $this->jobService->waitForCompletion($job->id, 20);
+
+		if ($completed && $completed->status === 'success') {
+			$result = json_decode($completed->result, true) ?? [];
+			$response = [
+				'mode' => 'done',
+				'job_id' => $job->id,
+				'status' => 'success',
+				'result' => $result,
+			];
+
+			$artifacts = $this->artifactService->findByJobId($job->id);
+			if ($artifacts) {
+				$response['artifacts'] = $this->artifactService->formatForResponse($artifacts);
+			}
+
+			return $response;
+		}
+
+		return [
+			'mode' => 'queued',
+			'job_id' => $job->id,
+			'status' => $completed?->status ?? 'pending',
+		];
+	}
+
+
 	private function getInputSchemaFile(string $toolName): ?string
 	{
-		$map = [
-			'create_task' => 'create-task.input.json',
-			'get_job_status' => 'get-job-status.input.json',
-			'list_my_recent_jobs' => 'list-my-recent-jobs.input.json',
-		];
-		return $map[$toolName] ?? null;
+		$filename = str_replace('_', '-', $toolName) . '.input.json';
+		$path = __DIR__ . '/../../../../packages/contracts/' . $filename;
+		return is_file($path) ? $filename : null;
 	}
 }
