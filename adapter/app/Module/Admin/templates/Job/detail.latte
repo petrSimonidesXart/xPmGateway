@@ -1,75 +1,114 @@
 {block title}Job {$job->id}{/block}
 
+{block actions}
+<a href="{plink default}" class="btn btn-outline-secondary">
+    <i class="ti ti-arrow-left me-1"></i>Zpět na seznam
+</a>
+{/block}
+
 {block content}
-<h2>Job Detail</h2>
-
-<div class="card mb-3">
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Job ID</dt>
-            <dd class="col-sm-9"><code>{$job->id}</code></dd>
-            <dt class="col-sm-3">Tool</dt>
-            <dd class="col-sm-9">{$job->ref('tools', 'tool_id')?->name}</dd>
-            <dt class="col-sm-3">Klient</dt>
-            <dd class="col-sm-9">{$job->ref('clients', 'client_id')?->name}</dd>
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9"><span class="badge badge-{$job->status}">{$job->status}</span></dd>
-            <dt class="col-sm-3">Pokusů</dt>
-            <dd class="col-sm-9">{$job->attempts}/{$job->max_attempts}</dd>
-            <dt class="col-sm-3">Vytvořen</dt>
-            <dd class="col-sm-9">{$job->created_at|date:'d.m.Y H:i:s'}</dd>
-            <dt class="col-sm-3">Zahájen</dt>
-            <dd class="col-sm-9">{if $job->started_at}{$job->started_at|date:'d.m.Y H:i:s'}{else}—{/if}</dd>
-            <dt class="col-sm-3">Dokončen</dt>
-            <dd class="col-sm-9">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</dd>
-        </dl>
-    </div>
-</div>
-
-<div class="card mb-3">
-    <div class="card-header">Payload</div>
-    <div class="card-body">
-        <pre class="mb-0">{$job->payload}</pre>
-    </div>
-</div>
-
-{if $job->result}
-<div class="card mb-3">
-    <div class="card-header">Výsledek</div>
-    <div class="card-body">
-        <pre class="mb-0">{$job->result}</pre>
-    </div>
-</div>
-{/if}
-
-{if $job->error_message}
-<div class="card mb-3 border-danger">
-    <div class="card-header text-bg-danger">Chyba</div>
-    <div class="card-body">
-        <pre class="mb-0 text-danger">{$job->error_message}</pre>
-    </div>
-</div>
-{/if}
-
-{if $screenshots}
-<div class="card mb-3">
-    <div class="card-header">Screenshoty</div>
-    <div class="card-body">
-        <div class="row">
-            {foreach $screenshots as $screenshot}
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <img src="{plink screenshot $job->id, $screenshot['file']}" class="card-img-top" alt="{$screenshot['step']}">
-                        <div class="card-body p-2">
-                            <small class="text-muted">{$screenshot['step']}</small>
-                        </div>
+<div class="row row-cards">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Informace o jobu</h3>
+            </div>
+            <div class="card-body">
+                <div class="datagrid">
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Job ID</div>
+                        <div class="datagrid-content"><code>{$job->id}</code></div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Tool</div>
+                        <div class="datagrid-content">{$job->ref('tools', 'tool_id')?->name}</div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Klient</div>
+                        <div class="datagrid-content">{$job->ref('clients', 'client_id')?->name}</div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Status</div>
+                        <div class="datagrid-content"><span class="badge badge-{$job->status}">{$job->status}</span></div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Pokusů</div>
+                        <div class="datagrid-content">{$job->attempts}/{$job->max_attempts}</div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Vytvořen</div>
+                        <div class="datagrid-content">{$job->created_at|date:'d.m.Y H:i:s'}</div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Zahájen</div>
+                        <div class="datagrid-content">{if $job->started_at}{$job->started_at|date:'d.m.Y H:i:s'}{else}—{/if}</div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Dokončen</div>
+                        <div class="datagrid-content">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</div>
                     </div>
                 </div>
-            {/foreach}
+            </div>
         </div>
     </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Payload</h3>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0"><code>{$job->payload}</code></pre>
+            </div>
+        </div>
+    </div>
+    {if $job->result}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Výsledek</h3>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0"><code>{$job->result}</code></pre>
+            </div>
+        </div>
+    </div>
+    {/if}
+    {if $job->error_message}
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="card-title text-white">
+                    <i class="ti ti-alert-circle me-1"></i>Chyba
+                </h3>
+            </div>
+            <div class="card-body">
+                <pre class="mb-0 text-danger"><code>{$job->error_message}</code></pre>
+            </div>
+        </div>
+    </div>
+    {/if}
+    {if $screenshots}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Screenshoty</h3>
+            </div>
+            <div class="card-body">
+                <div class="row row-cards">
+                    {foreach $screenshots as $screenshot}
+                        <div class="col-md-4">
+                            <div class="card">
+                                <img src="{plink screenshot $job->id, $screenshot['file']}" class="card-img-top" alt="{$screenshot['step']}">
+                                <div class="card-body p-2">
+                                    <small class="text-secondary">{$screenshot['step']}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {/foreach}
+                </div>
+            </div>
+        </div>
+    </div>
+    {/if}
 </div>
-{/if}
-
-<a href="{plink default}" class="btn btn-outline-secondary">Zpět na seznam</a>
 {/block}

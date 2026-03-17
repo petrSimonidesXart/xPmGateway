@@ -22,16 +22,31 @@
         "opis/json-schema": "^2.3"
     },
     "require-dev": {
-        "nette/tester": "^2.6"
+        "nette/tester": "^2.6",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-nette": "^2.0",
+        "nette/coding-standard": "^3.5"
     },
     "autoload": {
         "psr-4": {
             "App\\": "app/"
         }
     },
+    "scripts": {
+        "test": "tester tests -C",
+        "phpstan": "phpstan analyse --no-progress",
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "check": [
+            "@test",
+            "@phpstan",
+            "@cs-check"
+        ]
+    },
     "config": {
         "allow-plugins": {
-            "nette/component-model": true
+            "nette/component-model": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     }
 }

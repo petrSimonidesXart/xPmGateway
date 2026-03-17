@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="PM Gateway">
+	<rule ref="vendor/nette/coding-standard/preset-sniffer/Nette.xml"/>
+	<rule ref="vendor/nette/coding-standard/preset-sniffer/php84.xml"/>
+
+	<file>app</file>
+
+	<exclude-pattern>app/Module/Admin/templates</exclude-pattern>
+
+	<arg name="tab-width" value="4"/>
+	<arg name="encoding" value="utf-8"/>
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+</ruleset>

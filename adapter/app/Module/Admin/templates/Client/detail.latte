@@ -1,33 +1,55 @@
 {block title}Klient: {$client->name}{/block}
 
-{block content}
-<h2>{$client->name}</h2>
+{block actions}
+{if $isAdmin}
+<div class="btn-list">
+    <a href="{plink edit $client->id}" class="btn btn-primary">
+        <i class="ti ti-edit me-1"></i>Upravit
+    </a>
+    <a href="{plink :Admin:Token:default $client->id}" class="btn btn-outline-secondary">
+        <i class="ti ti-key me-1"></i>Spravovat tokeny
+    </a>
+</div>
+{/if}
+{/block}
 
-<div class="card mb-3">
+{block content}
+<div class="card">
     <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Popis</dt>
-            <dd class="col-sm-9">{$client->description ?? '—'}</dd>
-            <dt class="col-sm-3">Service Account</dt>
-            <dd class="col-sm-9">{$client->ref('service_accounts', 'service_account_id')?->name}</dd>
-            <dt class="col-sm-3">Aktivní</dt>
-            <dd class="col-sm-9">{if $client->is_active}Ano{else}Ne{/if}</dd>
-            <dt class="col-sm-3">IP Whitelist</dt>
-            <dd class="col-sm-9">{$client->allowed_ips ?? 'Bez omezení'}</dd>
-            <dt class="col-sm-3">Oprávnění</dt>
-            <dd class="col-sm-9">
-                {foreach $tools as $tool}
-                    {if isset($permissions[$tool->id])}
-                        <span class="badge bg-primary">{$tool->name}</span>
+        <div class="datagrid">
+            <div class="datagrid-item">
+                <div class="datagrid-title">Popis</div>
+                <div class="datagrid-content">{$client->description ?? '—'}</div>
+            </div>
+            <div class="datagrid-item">
+                <div class="datagrid-title">Service Account</div>
+                <div class="datagrid-content">{$client->ref('service_accounts', 'service_account_id')?->name}</div>
+            </div>
+            <div class="datagrid-item">
+                <div class="datagrid-title">Aktivní</div>
+                <div class="datagrid-content">
+                    {if $client->is_active}
+                        <span class="status status-green">Ano</span>
+                    {else}
+                        <span class="status status-secondary">Ne</span>
                     {/if}
-                {/foreach}
-            </dd>
-        </dl>
+                </div>
+            </div>
+            <div class="datagrid-item">
+                <div class="datagrid-title">IP Whitelist</div>
+                <div class="datagrid-content">{$client->allowed_ips ?? 'Bez omezení'}</div>
+            </div>
+            <div class="datagrid-item">
+                <div class="datagrid-title">Oprávnění</div>
+                <div class="datagrid-content">
+                    {foreach $tools as $tool}
+                        {if isset($permissions[$tool->id])}
+                            <span class="badge bg-blue me-1">{$tool->name}</span>
+                        {/if}
+                    {/foreach}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-{if $isAdmin}
-    <a href="{plink edit $client->id}" class="btn btn-primary">Upravit</a>
-    <a href="{plink :Admin:Token:default $client->id}" class="btn btn-outline-secondary">Spravovat tokeny</a>
-{/if}
 {/block}
