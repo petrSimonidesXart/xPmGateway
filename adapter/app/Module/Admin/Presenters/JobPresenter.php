@@ -6,6 +6,7 @@ namespace App\Module\Admin\Presenters;
 use App\Model\Repository\ClientRepository;
 use App\Model\Repository\JobRepository;
 use App\Model\Repository\ToolRepository;
+use App\Model\Service\ArtifactService;
 use Nette\Application\Responses\FileResponse;
 
 class JobPresenter extends BasePresenter
@@ -14,6 +15,7 @@ class JobPresenter extends BasePresenter
 		private JobRepository $jobRepository,
 		private ClientRepository $clientRepository,
 		private ToolRepository $toolRepository,
+		private ArtifactService $artifactService,
 	) {
 		parent::__construct();
 	}
@@ -60,6 +62,31 @@ class JobPresenter extends BasePresenter
 		$this->template->screenshots = $job->screenshots
 			? json_decode($job->screenshots, true)
 			: [];
+		$this->template->artifacts = $this->artifactService->findByJobId($id);
+
+		// Calculate duration
+		$this->template->duration = null;
+		if ($job->started_at && $job->finished_at) {
+			$diff = $job->finished_at->diff($job->started_at);
+			$seconds = $diff->s + $diff->i * 60 + $diff->h * 3600;
+			$this->template->duration = $seconds;
+		}
+	}
+
+
+	public function actionArtifactDownload(string $id): void
+	{
+		$artifact = $this->artifactService->findById($id);
+		if (!$artifact) {
+			$this->error('Artifact not found');
+		}
+
+		$fullPath = $this->artifactService->getFullPath($artifact);
+		if (!is_file($fullPath)) {
+			$this->error('Artifact file missing');
+		}
+
+		$this->sendResponse(new FileResponse($fullPath, $artifact->filename, $artifact->mime_type));
 	}
 
 

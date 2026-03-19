@@ -47,6 +47,10 @@
                         <div class="datagrid-title">Dokončen</div>
                         <div class="datagrid-content">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</div>
                     </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Trvání</div>
+                        <div class="datagrid-content">{if $duration !== null}{$duration} s{else}—{/if}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,6 +87,43 @@
             </div>
             <div class="card-body">
                 <pre class="mb-0 text-danger"><code>{$job->error_message}</code></pre>
+            </div>
+        </div>
+    </div>
+    {/if}
+    {if $artifacts}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-files me-1"></i>Artefakty</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Soubor</th>
+                            <th>Typ</th>
+                            <th>Velikost</th>
+                            <th>Vytvořen</th>
+                            <th class="w-1"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $artifacts as $artifact}
+                        <tr>
+                            <td><i class="ti ti-file me-1"></i>{$artifact->filename}</td>
+                            <td class="text-secondary">{$artifact->mime_type}</td>
+                            <td class="text-secondary">{=$artifact->size_bytes / 1024|number:1} KB</td>
+                            <td class="text-secondary">{$artifact->created_at|date:'d.m.Y H:i:s'}</td>
+                            <td>
+                                <a href="{plink artifactDownload $artifact->id}" class="btn btn-sm btn-outline-primary">
+                                    <i class="ti ti-download me-1"></i>Stáhnout
+                                </a>
+                            </td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

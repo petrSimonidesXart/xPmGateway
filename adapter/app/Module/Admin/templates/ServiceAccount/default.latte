@@ -36,7 +36,13 @@
                     <td class="text-secondary">{$account->created_at|date:'d.m.Y'}</td>
                     <td>
                         {if $isAdmin}
-                            <a href="{plink edit $account->id}" class="btn btn-sm">Upravit</a>
+                            <div class="btn-list">
+                                <a href="{plink edit $account->id}" class="btn btn-sm">Upravit</a>
+                                <a href="{plink delete! $account->id}" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Opravdu smazat service account {$account->name}?')">
+                                    <i class="ti ti-trash"></i>
+                                </a>
+                            </div>
                         {/if}
                     </td>
                 </tr>
