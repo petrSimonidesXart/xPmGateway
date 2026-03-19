@@ -49,7 +49,7 @@ class ServiceAccountPresenter extends BasePresenter
 
 	protected function createComponentAccountForm(): Form
 	{
-		$form = new Form();
+		$form = new Form;
 
 		$form->addText('name', 'Název:')
 			->setRequired('Zadejte název.');

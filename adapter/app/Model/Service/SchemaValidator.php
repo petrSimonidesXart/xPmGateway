@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Service;
 
-use Opis\JsonSchema\Validator;
 use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Validator;
 
 class SchemaValidator
 {
@@ -14,7 +14,7 @@ class SchemaValidator
 
 	public function __construct()
 	{
-		$this->validator = new Validator();
+		$this->validator = new Validator;
 		$this->contractsDir = __DIR__ . '/../../../../packages/contracts';
 	}
 
@@ -31,7 +31,7 @@ class SchemaValidator
 		}
 
 		$schemaContent = json_decode(file_get_contents($schemaPath));
-		$dataObject = json_decode(json_encode($data ?: new \stdClass()));
+		$dataObject = json_decode(json_encode($data ?: new \stdClass));
 
 		$result = $this->validator->validate($dataObject, $schemaContent);
 
@@ -39,7 +39,7 @@ class SchemaValidator
 			return null;
 		}
 
-		$formatter = new ErrorFormatter();
+		$formatter = new ErrorFormatter;
 		$errors = $formatter->format($result->error());
 
 		return array_values(array_map(

@@ -4,8 +4,8 @@ declare(strict_types=1);
 namespace App\Model\Service;
 
 use App\Model\Repository\ApiTokenRepository;
-use App\Model\Repository\ClientRepository;
 use App\Model\Repository\ClientPermissionRepository;
+use App\Model\Repository\ClientRepository;
 use Nette\Database\Table\ActiveRow;
 
 class AuthService
@@ -33,7 +33,7 @@ class AuthService
 		}
 
 		// Check expiration
-		if ($token->expires_at !== null && $token->expires_at < new \DateTime()) {
+		if ($token->expires_at !== null && $token->expires_at < new \DateTime) {
 			return null;
 		}
 

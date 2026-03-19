@@ -48,8 +48,6 @@ export async function handleGetTask(job: Job, api: AdapterApi): Promise<void> {
 
         // Step 4: Check if we got redirected to a task detail or got an error
         const currentUrl = page.url();
-        const pageContent = await page.textContent('body') ?? '';
-
         // Detect error state
         const hasError = await page.locator('.error, .alert-danger, .flash-error, .message-error').count() > 0;
         const isStillOnForm = currentUrl.includes('direct_task');

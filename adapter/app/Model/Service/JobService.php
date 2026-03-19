@@ -89,7 +89,12 @@ class JobService
 	}
 
 
-	public function getClientJobs(int $clientId, ?string $status = null, ?string $toolName = null, int $limit = 10): array
+	public function getClientJobs(
+		int $clientId,
+		?string $status = null,
+		?string $toolName = null,
+		int $limit = 10,
+	): array
 	{
 		return $this->jobRepository->findByClientId($clientId, $status, $toolName, $limit);
 	}

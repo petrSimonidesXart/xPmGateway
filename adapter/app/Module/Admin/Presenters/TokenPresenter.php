@@ -36,7 +36,7 @@ class TokenPresenter extends BasePresenter
 
 	protected function createComponentGenerateTokenForm(): Form
 	{
-		$form = new Form();
+		$form = new Form;
 		$form->addText('label', 'Label:')
 			->setNullable();
 		$form->addText('expires_at', 'Expirace (volitelně):')

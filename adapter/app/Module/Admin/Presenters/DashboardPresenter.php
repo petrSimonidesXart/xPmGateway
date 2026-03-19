@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace App\Module\Admin\Presenters;
 
-use App\Model\Repository\JobRepository;
 use App\Model\Repository\AuditLogRepository;
 use App\Model\Repository\ClientRepository;
+use App\Model\Repository\JobRepository;
 
 class DashboardPresenter extends BasePresenter
 {

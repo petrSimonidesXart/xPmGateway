@@ -64,24 +64,24 @@ Odstranění technických nedostatků, které brzdí další rozvoj nebo předst
 Zlepšení kvality kódu, testovatelnosti a vývojářského komfortu.
 
 ### Testy
-- [ ] **Unit testy pro McpFacade**: mock repozitáře, otestovat auth flow, permission bypass, rate limiting
-- [ ] **Unit testy pro SchemaValidator**: validní/nevalidní vstupy pro každý tool
-- [ ] **Integration testy pro REST API**: HTTP requesty na V1Presenter, ověřit status kódy a response formát
-- [ ] **Worker handler testy**: mock Playwright page, ověřit scraping logiku
-- [ ] **E2E test**: celý flow MCP call → job → worker → result → polling
-- [ ] **CI pipeline**: GitHub Actions — lint, testy, type-check
+- [x] **Unit testy pro McpFacade**: mock repozitáře, otestovat auth flow, permission bypass, rate limiting
+- [x] **Unit testy pro SchemaValidator**: validní/nevalidní vstupy pro každý tool
+- [x] **Integration testy pro REST API**: HTTP requesty na V1Presenter, ověřit status kódy a response formát
+- [x] **Worker handler testy**: mock Playwright page, ověřit scraping logiku
+- [x] **E2E test**: celý flow MCP call → job → worker → result → polling
+- [x] **CI pipeline**: GitHub Actions — lint, testy, type-check
 
 ### Typing & Lint
-- [ ] **PHP strict types všude**: ověřit že všechny soubory mají `declare(strict_types=1)`
-- [ ] **PHPStan / Psalm**: zavést statickou analýzu, vyřešit existující chyby
-- [ ] **ESLint + strict TS config**: pro worker (`strict: true`, `noUncheckedIndexedAccess`)
-- [ ] **PHP CS Fixer**: sjednotit coding style (PSR-12 nebo Nette coding standard)
+- [x] **PHP strict types všude**: ověřit že všechny soubory mají `declare(strict_types=1)`
+- [x] **PHPStan / Psalm**: zavést statickou analýzu, vyřešit existující chyby
+- [x] **ESLint + strict TS config**: pro worker (`strict: true`, `noUncheckedIndexedAccess`)
+- [x] **PHP CS Fixer**: sjednotit coding style (PSR-12 nebo Nette coding standard)
 
 ### Dokumentace
-- [ ] **README**: setup instrukce, architektura, jak přidat nový tool
-- [ ] **API dokumentace**: popis autentizace, rate limitů, error formátu
-- [ ] **Worker handler guide**: jak napsat nový Playwright handler
-- [ ] **Contracts dokumentace**: popis JSON schémat, konvence pojmenování
+- [x] **README**: setup instrukce, architektura, jak přidat nový tool
+- [x] **API dokumentace**: popis autentizace, rate limitů, error formátu
+- [x] **Worker handler guide**: jak napsat nový Playwright handler
+- [x] **Contracts dokumentace**: popis JSON schémat, konvence pojmenování
 
 ---
 

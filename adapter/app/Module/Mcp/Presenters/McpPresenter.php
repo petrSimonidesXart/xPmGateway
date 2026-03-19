@@ -6,12 +6,14 @@ namespace App\Module\Mcp\Presenters;
 use App\Model\Facade\McpException;
 use App\Model\Facade\McpFacade;
 use App\Model\Repository\ToolRepository;
-use App\Model\Service\AuthService;
 use App\Model\Service\AuditService;
+use App\Model\Service\AuthService;
 use App\Model\Service\RateLimitService;
+use Nette\Application\AbortException;
 use Nette\Application\UI\Presenter;
 use Nette\Http\IResponse;
 use Nette\Utils\Json;
+use Tracy\Debugger;
 
 /**
  * MCP Gateway endpoint.
@@ -111,10 +113,10 @@ class McpPresenter extends Presenter
 				default => -32000,
 			};
 			$this->sendJsonRpcError($id, $code, $e->getMessage());
-		} catch (\Nette\Application\AbortException $e) {
+		} catch (AbortException $e) {
 			throw $e;
 		} catch (\Throwable $e) {
-			\Tracy\Debugger::log($e);
+			Debugger::log($e);
 			$this->sendJsonRpcError($id, -32603, 'Internal error');
 		}
 	}
@@ -125,7 +127,7 @@ class McpPresenter extends Presenter
 		return [
 			'protocolVersion' => '2024-11-05',
 			'capabilities' => [
-				'tools' => new \stdClass(),
+				'tools' => new \stdClass,
 			],
 			'serverInfo' => [
 				'name' => 'pm-gateway',
@@ -146,7 +148,7 @@ class McpPresenter extends Presenter
 
 			$inputSchema = is_file($schemaFile)
 				? json_decode(file_get_contents($schemaFile), true)
-				: ['type' => 'object', 'properties' => new \stdClass()];
+				: ['type' => 'object', 'properties' => new \stdClass];
 
 			$result[] = [
 				'name' => $tool->name,

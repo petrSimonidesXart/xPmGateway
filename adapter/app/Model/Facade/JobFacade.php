@@ -6,7 +6,6 @@ namespace App\Model\Facade;
 use App\Model\Service\AlertService;
 use App\Model\Service\EncryptionService;
 use App\Model\Service\JobService;
-use Nette\Database\Table\ActiveRow;
 
 class JobFacade
 {
@@ -52,7 +51,13 @@ class JobFacade
 	/**
 	 * Process job result from worker.
 	 */
-	public function handleJobResult(string $jobId, string $status, ?array $result = null, ?string $error = null, ?array $screenshots = null): void
+	public function handleJobResult(
+		string $jobId,
+		string $status,
+		?array $result = null,
+		?string $error = null,
+		?array $screenshots = null,
+	): void
 	{
 		$job = $this->jobService->findById($jobId);
 		if (!$job) {

@@ -11,7 +11,6 @@ use App\Model\Service\ArtifactService;
 use App\Model\Service\AuthService;
 use Nette\Application\UI\Presenter;
 use Nette\Database\Table\ActiveRow;
-use Nette\Http\IResponse;
 use Nette\Utils\Json;
 
 /**
@@ -77,7 +76,7 @@ class V1Presenter extends Presenter
 			// Decode as object tree to preserve {} vs [] distinction in OpenAPI JSON
 			$inputSchema = is_file($schemaFile)
 				? json_decode(file_get_contents($schemaFile))
-				: (object) ['type' => 'object', 'properties' => new \stdClass()];
+				: (object) ['type' => 'object', 'properties' => new \stdClass];
 
 			$operationId = lcfirst(str_replace('_', '', ucwords($tool->name, '_')));
 
@@ -278,7 +277,7 @@ class V1Presenter extends Presenter
 				],
 				'schemas' => $schemas,
 			],
-			'paths' => $paths ?: new \stdClass(),
+			'paths' => $paths ?: new \stdClass,
 		];
 
 		$this->getHttpResponse()->setContentType('application/json');

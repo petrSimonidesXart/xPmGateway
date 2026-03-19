@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace App\Model\Service;
 
-use Nette\Mail\Message;
 use Nette\Mail\Mailer;
+use Nette\Mail\Message;
+use Tracy\Debugger;
+use Tracy\ILogger;
 
 class AlertService
 {
@@ -21,7 +23,7 @@ class AlertService
 			return;
 		}
 
-		$mail = new Message();
+		$mail = new Message;
 		$mail->setFrom('pm-gateway@pm-gateway.local', 'PM Gateway')
 			->addTo($this->alertEmail)
 			->setSubject("PM Gateway: Job failed [{$job->id}]")
@@ -36,7 +38,7 @@ class AlertService
 		try {
 			$this->mailer->send($mail);
 		} catch (\Throwable $e) {
-			\Tracy\Debugger::log($e, \Tracy\ILogger::WARNING);
+			Debugger::log($e, ILogger::WARNING);
 		}
 	}
 }

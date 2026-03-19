@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Model\Repository;
 
-use Nette\Database\Table\ActiveRow;
 
 class ClientRepository extends BaseRepository
 {

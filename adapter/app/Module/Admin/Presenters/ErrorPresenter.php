@@ -5,6 +5,8 @@ namespace App\Module\Admin\Presenters;
 
 use Nette\Application\BadRequestException;
 use Nette\Application\UI\Presenter;
+use Tracy\Debugger;
+use Tracy\ILogger;
 
 class ErrorPresenter extends Presenter
 {
@@ -14,7 +16,7 @@ class ErrorPresenter extends Presenter
 			$code = $exception->getHttpCode();
 		} else {
 			$code = 500;
-			\Tracy\Debugger::log($exception, \Tracy\ILogger::EXCEPTION);
+			Debugger::log($exception, ILogger::EXCEPTION);
 		}
 
 		$this->template->code = $code;

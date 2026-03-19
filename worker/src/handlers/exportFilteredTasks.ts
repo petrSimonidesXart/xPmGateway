@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import { join } from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { readdirSync } from 'node:fs';
+
 import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
 import { loginToLegacySystem } from '../lib/auth.js';

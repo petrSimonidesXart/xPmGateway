@@ -36,7 +36,7 @@ class ApiTokenRepository extends BaseRepository
 	{
 		$this->getTable()
 			->where('id', $id)
-			->update(['revoked_at' => new \DateTime()]);
+			->update(['revoked_at' => new \DateTime]);
 	}
 
 
@@ -44,6 +44,6 @@ class ApiTokenRepository extends BaseRepository
 	{
 		$this->getTable()
 			->where('id', $id)
-			->update(['last_used_at' => new \DateTime()]);
+			->update(['last_used_at' => new \DateTime]);
 	}
 }
