@@ -116,6 +116,76 @@
             </div>
         </div>
     </div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"
+         data-notifications-url="{plink :Admin:Job:notifications}"
+         data-job-detail-url="{plink :Admin:Job:detail '__ID__'}"></div>
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+    <script n:syntax="off">
+    (function() {
+        const POLL_INTERVAL = 15000;
+        const container = document.getElementById('toast-container');
+        const NOTIFICATIONS_URL = container.dataset.notificationsUrl;
+        const JOB_DETAIL_URL = container.dataset.jobDetailUrl;
+        const shownIds = new Set(JSON.parse(localStorage.getItem('pmg_shown') || '[]'));
+        let since = localStorage.getItem('pmg_since') || new Date().toISOString();
+
+        function showToast(job) {
+            const isSuccess = job.status === 'success';
+            const icon = isSuccess ? 'ti-circle-check' : 'ti-alert-circle';
+            const color = isSuccess ? 'bg-green' : 'bg-red';
+            const label = isSuccess ? 'Dokončen' : 'Selhal';
+            const detail = job.error ? `: ${job.error.substring(0, 80)}` : '';
+
+            const el = document.createElement('div');
+            el.className = 'toast show';
+            el.setAttribute('role', 'alert');
+            el.innerHTML = `
+                <div class="toast-header">
+                    <span class="avatar avatar-xs ${color} me-2"><i class="ti ${icon} text-white"></i></span>
+                    <strong class="me-auto">${label}</strong>
+                    <small class="text-secondary">${job.client_name}</small>
+                    <button type="button" class="ms-2 btn-close" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">
+                    <a href="${JOB_DETAIL_URL.replace('__ID__', job.id)}" class="text-reset">
+                        <strong>${job.tool_name}</strong>${detail}
+                    </a>
+                </div>`;
+            document.getElementById('toast-container').appendChild(el);
+            const toast = new bootstrap.Toast(el, {autohide: true, delay: 8000});
+            toast.show();
+            el.addEventListener('hidden.bs.toast', () => el.remove());
+        }
+
+        async function poll() {
+            try {
+                const res = await fetch(`${NOTIFICATIONS_URL}?since=${encodeURIComponent(since)}`);
+                if (!res.ok) return;
+                const jobs = await res.json();
+                for (const job of jobs) {
+                    if (!shownIds.has(job.id)) {
+                        shownIds.add(job.id);
+                        showToast(job);
+                    }
+                }
+                if (jobs.length > 0) {
+                    since = jobs[0].finished_at;
+                    localStorage.setItem('pmg_since', since);
+                    // Keep shownIds bounded
+                    const arr = [...shownIds];
+                    if (arr.length > 200) {
+                        const trimmed = arr.slice(-100);
+                        shownIds.clear();
+                        trimmed.forEach(id => shownIds.add(id));
+                    }
+                    localStorage.setItem('pmg_shown', JSON.stringify([...shownIds]));
+                }
+            } catch (e) { /* ignore network errors */ }
+        }
+
+        setInterval(poll, POLL_INTERVAL);
+        setTimeout(poll, 2000);
+    })();
+    </script>
 </body>
 </html>

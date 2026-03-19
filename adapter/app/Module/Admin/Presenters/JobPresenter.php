@@ -90,6 +90,39 @@ class JobPresenter extends BasePresenter
 	}
 
 
+	/**
+	 * AJAX endpoint for toast notifications — returns jobs completed/failed since given timestamp.
+	 */
+	public function actionNotifications(): void
+	{
+		$since = $this->getParameter('since');
+		if (!$since) {
+			$this->sendJson([]);
+		}
+
+		$jobs = $this->jobRepository->getTable()
+			->where('status', ['success', 'failed'])
+			->where('finished_at > ?', $since)
+			->order('finished_at DESC')
+			->limit(10)
+			->fetchAll();
+
+		$result = [];
+		foreach ($jobs as $job) {
+			$result[] = [
+				'id' => $job->id,
+				'tool_name' => $job->ref('tools', 'tool_id')->name ?? '?',
+				'client_name' => $job->ref('clients', 'client_id')->name ?? '?',
+				'status' => $job->status,
+				'finished_at' => $job->finished_at->format('c'),
+				'error' => $job->error_message,
+			];
+		}
+
+		$this->sendJson($result);
+	}
+
+
 	public function actionScreenshot(string $id, string $filename): void
 	{
 		// Sanitize filename to prevent directory traversal
