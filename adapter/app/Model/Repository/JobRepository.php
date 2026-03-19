@@ -69,13 +69,17 @@ class JobRepository extends BaseRepository
 	}
 
 
-	public function markTimedOut(): int
+	/**
+	 * Mark processing jobs as timed out when started_at + timeout_seconds + grace period has elapsed.
+	 */
+	public function markTimedOut(int $graceSeconds = 120): int
 	{
 		return $this->getTable()
 			->where('status', 'processing')
-			->where('started_at < ?', new \DateTime('-120 seconds'))
+			->where('DATE_ADD(started_at, INTERVAL (timeout_seconds + ?) SECOND) < NOW()', $graceSeconds)
 			->update([
 				'status' => 'timeout',
+				'error_message' => 'Job timed out (no response from worker)',
 				'finished_at' => new \DateTime,
 			]);
 	}

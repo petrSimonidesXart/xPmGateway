@@ -12,6 +12,37 @@
         .badge-success { background: var(--tblr-green); color: #fff; }
         .badge-failed { background: var(--tblr-red); color: #fff; }
         .badge-timeout { background: var(--tblr-secondary); color: #fff; }
+
+        .worker-status-bar {
+            padding: 5px 0;
+            font-size: 0.8125rem;
+            color: #fff;
+            transition: background-color 0.3s;
+            cursor: default;
+        }
+        .ws-idle { background: #2fb344; }
+        .ws-busy { background: #206bc4; }
+        .ws-offline { background: #d63939; }
+        .ws-unknown { background: #667382; }
+        .ws-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fff;
+        }
+        .ws-busy .ws-dot {
+            animation: ws-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes ws-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        #ws-details {
+            display: none;
+            padding-bottom: 4px;
+        }
+        #ws-details a { color: #fff; }
     </style>
 </head>
 <body class="page">
@@ -87,6 +118,21 @@
         </div>
     </aside>
     <div class="page-wrapper">
+        <div class="worker-status-bar ws-unknown" id="worker-status-bar"
+             data-url="{plink :Admin:Dashboard:workerStatus}"
+             data-job-url="{plink :Admin:Job:detail '__ID__'}">
+            <div class="container-xl d-flex align-items-center">
+                <span class="ws-dot"></span>
+                <span class="ms-2" id="ws-text">Worker: …</span>
+                <span class="ms-2 opacity-75 d-none" id="ws-detail"></span>
+                <button class="btn btn-link btn-sm ms-auto p-0 text-white opacity-75" id="ws-toggle" title="Detail">
+                    <i class="ti ti-chevron-down" id="ws-toggle-icon"></i>
+                </button>
+            </div>
+            <div id="ws-details">
+                <div class="container-xl" id="ws-details-content"></div>
+            </div>
+        </div>
         <div class="page-header d-print-none">
             <div class="container-xl">
                 <div class="row g-2 align-items-center">
@@ -185,6 +231,84 @@
 
         setInterval(poll, POLL_INTERVAL);
         setTimeout(poll, 2000);
+    })();
+
+    // Worker status bar
+    (function() {
+        var bar = document.getElementById('worker-status-bar');
+        var STATUS_URL = bar.dataset.url;
+        var JOB_URL = bar.dataset.jobUrl;
+        var textEl = document.getElementById('ws-text');
+        var detailEl = document.getElementById('ws-detail');
+        var details = document.getElementById('ws-details');
+        var detailsContent = document.getElementById('ws-details-content');
+        var toggleBtn = document.getElementById('ws-toggle');
+        var toggleIcon = document.getElementById('ws-toggle-icon');
+        var expanded = false;
+
+        toggleBtn.addEventListener('click', function() {
+            expanded = !expanded;
+            details.style.display = expanded ? 'block' : 'none';
+            toggleIcon.className = expanded ? 'ti ti-chevron-up' : 'ti ti-chevron-down';
+        });
+
+        function dur(s) {
+            if (s == null) return '—';
+            if (s < 60) return s + 's';
+            if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+            return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+        }
+
+        function ts(iso) {
+            if (!iso) return '—';
+            return new Date(iso).toLocaleString('cs-CZ');
+        }
+
+        function render(d) {
+            bar.className = 'worker-status-bar ws-' + d.status;
+
+            if (d.status === 'idle') {
+                textEl.textContent = 'Worker: Idle';
+                detailEl.textContent = d.uptime_seconds ? 'Uptime: ' + dur(d.uptime_seconds) : '';
+                detailEl.classList.toggle('d-none', !d.uptime_seconds);
+            } else if (d.status === 'busy') {
+                textEl.textContent = 'Worker zpracovává: ' + (d.job ? d.job.tool_name : '?');
+                detailEl.textContent = d.job ? d.job.client_name + ' · ' + dur(d.job.duration_seconds) : '';
+                detailEl.classList.remove('d-none');
+            } else if (d.status === 'offline') {
+                textEl.textContent = 'Worker: Offline';
+                detailEl.textContent = d.last_seen_at ? 'Naposledy: ' + ts(d.last_seen_at) : '';
+                detailEl.classList.toggle('d-none', !d.last_seen_at);
+            } else {
+                textEl.textContent = 'Worker: Nepřipojen';
+                detailEl.textContent = 'Worker se dosud nepřipojil k adapteru';
+                detailEl.classList.remove('d-none');
+            }
+
+            var html = '';
+            if (d.started_at) html += '<div>Spuštěn od: ' + ts(d.started_at) + '</div>';
+            if (d.last_seen_at) html += '<div>Naposledy viděn: ' + ts(d.last_seen_at) + '</div>';
+            if (d.uptime_seconds) html += '<div>Uptime: ' + dur(d.uptime_seconds) + '</div>';
+            if (d.job) {
+                html += '<div class="mt-1 pt-1" style="border-top: 1px solid rgba(255,255,255,0.25);">';
+                html += '<div>Job: <a href="' + JOB_URL.replace('__ID__', d.job.id) + '">' + d.job.id.substring(0, 8) + '…</a></div>';
+                html += '<div>Tool: ' + d.job.tool_name + '</div>';
+                html += '<div>Klient: ' + d.job.client_name + '</div>';
+                html += '<div>Trvání: ' + dur(d.job.duration_seconds) + '</div>';
+                html += '</div>';
+            }
+            detailsContent.innerHTML = html;
+        }
+
+        async function pollStatus() {
+            try {
+                var res = await fetch(STATUS_URL);
+                if (res.ok) render(await res.json());
+            } catch (e) { /* ignore */ }
+        }
+
+        setInterval(pollStatus, 10000);
+        pollStatus();
     })();
     </script>
 </body>

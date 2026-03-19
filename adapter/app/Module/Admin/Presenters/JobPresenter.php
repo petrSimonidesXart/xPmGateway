@@ -71,6 +71,86 @@ class JobPresenter extends BasePresenter
 			$seconds = $diff->s + $diff->i * 60 + $diff->h * 3600;
 			$this->template->duration = $seconds;
 		}
+
+		// Retry chain
+		$this->template->retryOf = $job->retry_of_job_id
+			? $this->jobRepository->findById($job->retry_of_job_id)
+			: null;
+		$this->template->retriedAs = $this->jobRepository->getTable()
+			->where('retry_of_job_id', $id)
+			->order('created_at DESC')
+			->fetch() ?: null;
+	}
+
+
+	/**
+	 * Force-cancel a stuck processing/pending job.
+	 */
+	public function actionCancel(string $id): void
+	{
+		$job = $this->jobRepository->findById($id);
+		if (!$job) {
+			$this->error('Job not found');
+		}
+
+		if (!in_array($job->status, ['pending', 'processing'], true)) {
+			$this->flashMessage('Zrušit lze pouze pending nebo processing joby.', 'warning');
+			$this->redirect('detail', $id);
+		}
+
+		$this->jobRepository->getTable()
+			->where('id', $id)
+			->update([
+				'status' => 'failed',
+				'error_message' => 'Manually cancelled from admin UI',
+				'finished_at' => new \DateTime,
+			]);
+
+		$this->auditService->logAdminAction('job_cancelled', 'success', [
+			'job_id' => $id,
+			'tool' => $job->ref('tools', 'tool_id')?->name,
+			'previous_status' => $job->status,
+		]);
+
+		$this->flashMessage('Job byl zrušen.', 'success');
+		$this->redirect('detail', $id);
+	}
+
+
+	/**
+	 * Retry a failed/timeout job by creating a new one with the same parameters.
+	 */
+	public function actionRetry(string $id): void
+	{
+		$job = $this->jobRepository->findById($id);
+		if (!$job) {
+			$this->error('Job not found');
+		}
+
+		if (!in_array($job->status, ['failed', 'timeout'], true)) {
+			$this->flashMessage('Opakovat lze pouze selhané nebo timeout joby.', 'warning');
+			$this->redirect('detail', $id);
+		}
+
+		$payload = json_decode($job->payload, true) ?: [];
+		$newJob = $this->jobRepository->create([
+			'client_id' => $job->client_id,
+			'service_account_id' => $job->service_account_id,
+			'tool_id' => $job->tool_id,
+			'payload' => $job->payload,
+			'status' => 'pending',
+			'timeout_seconds' => $job->timeout_seconds,
+			'retry_of_job_id' => $job->id,
+		]);
+
+		$this->auditService->logAdminAction('job_retried', 'success', [
+			'original_job_id' => $id,
+			'new_job_id' => $newJob->id,
+			'tool' => $job->ref('tools', 'tool_id')?->name,
+		]);
+
+		$this->flashMessage('Job byl znovu vytvořen.', 'success');
+		$this->redirect('detail', $newJob->id);
 	}
 
 
@@ -87,6 +167,25 @@ class JobPresenter extends BasePresenter
 		}
 
 		$this->sendResponse(new FileResponse($fullPath, $artifact->filename, $artifact->mime_type));
+	}
+
+
+	/**
+	 * Serve artifact inline (Content-Disposition: inline) for embedding in video player etc.
+	 */
+	public function actionArtifactView(string $id): void
+	{
+		$artifact = $this->artifactService->findById($id);
+		if (!$artifact) {
+			$this->error('Artifact not found');
+		}
+
+		$fullPath = $this->artifactService->getFullPath($artifact);
+		if (!is_file($fullPath)) {
+			$this->error('Artifact file missing');
+		}
+
+		$this->sendResponse(new FileResponse($fullPath, $artifact->filename, $artifact->mime_type, false));
 	}
 
 

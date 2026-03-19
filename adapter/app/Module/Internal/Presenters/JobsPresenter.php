@@ -6,6 +6,8 @@ namespace App\Module\Internal\Presenters;
 use App\Model\Facade\JobFacade;
 use App\Model\Facade\McpException;
 use App\Model\Service\ArtifactService;
+use App\Model\Service\WorkerStatusService;
+use Nette\Application\AbortException;
 use Nette\Application\UI\Presenter;
 use Nette\Utils\Json;
 
@@ -18,6 +20,7 @@ class JobsPresenter extends Presenter
 	public function __construct(
 		private JobFacade $jobFacade,
 		private ArtifactService $artifactService,
+		private WorkerStatusService $workerStatusService,
 		private string $internalApiSecret,
 	) {
 		parent::__construct();
@@ -37,6 +40,8 @@ class JobsPresenter extends Presenter
 	 */
 	public function actionNext(): void
 	{
+		$this->workerStatusService->recordHeartbeat();
+
 		$job = $this->jobFacade->getNextJobForWorker();
 
 		if (!$job) {
@@ -95,9 +100,11 @@ class JobsPresenter extends Presenter
 				'filename' => $artifact->filename,
 				'size_bytes' => $artifact->size_bytes,
 			]);
+		} catch (AbortException $e) {
+			throw $e;
 		} catch (\Throwable $e) {
 			$this->getHttpResponse()->setCode(500);
-			$this->sendJson(['error' => $e->getMessage()]);
+			$this->sendJson(['error' => $e->getMessage() ?: $e::class]);
 		}
 	}
 

@@ -46,18 +46,31 @@
                     <th>Pokusů</th>
                     <th>Vytvořen</th>
                     <th>Dokončen</th>
+                    <th class="w-1"></th>
                 </tr>
             </thead>
             <tbody>
             {foreach $jobs as $job}
                 <tr>
-                    <td><a href="{plink detail $job->id}">{$job->id|truncate:12}</a></td>
+                    <td><a href="{plink detail $job->id}">{$job->id|truncate(12)}</a></td>
                     <td>{$job->ref('tools', 'tool_id')?->name}</td>
                     <td>{$job->ref('clients', 'client_id')?->name}</td>
                     <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
                     <td class="text-secondary">{$job->attempts}/{$job->max_attempts}</td>
                     <td class="text-secondary">{$job->created_at|date:'d.m.Y H:i:s'}</td>
                     <td class="text-secondary">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</td>
+                    <td class="text-nowrap">
+                        {if in_array($job->status, ['pending', 'processing'])}
+                        <a href="{plink cancel $job->id}" class="btn btn-sm btn-outline-danger" title="Zrušit" onclick="return confirm('Zrušit?')">
+                            <i class="ti ti-x"></i>
+                        </a>
+                        {/if}
+                        {if in_array($job->status, ['failed', 'timeout'])}
+                        <a href="{plink retry $job->id}" class="btn btn-sm btn-outline-warning" title="Opakovat job">
+                            <i class="ti ti-refresh"></i>
+                        </a>
+                        {/if}
+                    </td>
                 </tr>
             {/foreach}
             </tbody>

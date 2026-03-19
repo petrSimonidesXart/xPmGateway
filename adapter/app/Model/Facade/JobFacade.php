@@ -22,16 +22,18 @@ class JobFacade
 	 */
 	public function getNextJobForWorker(): ?array
 	{
-		$job = $this->jobService->getNextPendingJob();
-		if (!$job) {
+		$pendingJob = $this->jobService->getNextPendingJob();
+		if (!$pendingJob) {
 			return null;
 		}
 
 		// Atomically mark as processing
-		if (!$this->jobService->markProcessing($job->id)) {
+		if (!$this->jobService->markProcessing($pendingJob->id)) {
 			return null; // Another worker grabbed it
 		}
 
+		// Re-fetch with a clean query (the original ActiveRow is bound to WHERE status='pending')
+		$job = $this->jobService->findById($pendingJob->id);
 		$serviceAccount = $job->ref('service_accounts', 'service_account_id');
 
 		return [

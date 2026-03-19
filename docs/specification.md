@@ -453,6 +453,7 @@ Unique constraint na (`client_id`, `tool_id`).
 | `started_at` | timestamp, nullable | kdy worker začal |
 | `finished_at` | timestamp, nullable | |
 | `timeout_seconds` | int, default 120 | max doba zpracování |
+| `retry_of_job_id` | uuid FK → jobs, nullable | odkaz na původní job při opakování |
 
 ## 9.8 `audit_log` — append-only záznam všech akcí
 
@@ -475,7 +476,18 @@ Unique constraint na (`client_id`, `tool_id`).
 
 Audit log je append-only — žádné UPDATE, žádné DELETE.
 
-## 9.9 `rate_limits` — sliding window countery
+## 9.9 `worker_heartbeats` — heartbeaty worker procesu
+
+| Sloupec | Typ | Popis |
+|---|---|---|
+| `worker_id` | string(64) PK | identifikátor workeru (default: `main`) |
+| `last_seen_at` | datetime | čas posledního pollu |
+| `started_at` | datetime | čas startu/restartu workeru |
+
+Heartbeat se zaznamenává implicitně při každém `GET /api/internal/jobs/next`.
+Admin UI zobrazuje stav: idle (zelená), busy (modrá), offline (červená), nepřipojen (šedá).
+
+## 9.10 `rate_limits` — sliding window countery
 
 | Sloupec | Typ | Popis |
 |---|---|---|
@@ -527,7 +539,17 @@ worker/
       screenshots.ts    — ukládání screenshotů
 ```
 
-## 11.3 Screenshot log
+## 11.3 Video nahrávání
+
+Worker automaticky nahrává průběh každého jobu jako WebM video (Playwright `recordVideo`).
+
+- Rozlišení: 1280x720
+- Video se finalizuje po `context.close()`
+- Upload jako artifact (`video/webm`) přes interní API
+- V admin UI se přehrává inline `<video>` elementem
+- Lze vypnout: `RECORD_VIDEO=0` v `.env` workeru
+
+## 11.4 Screenshot log
 
 Worker pořizuje screenshoty při **každém jobu** (úspěch i chyba) z klíčových kroků:
 
@@ -542,7 +564,7 @@ Ukládání:
 -   V DB: `jobs.screenshots` — JSON pole `[{step: "login", file: "01-login-ok.png"}, ...]`
 -   Admin UI: route `/admin/jobs/{id}/screenshot/{filename}` pro zobrazení
 
-## 11.4 Zásady UI automatizace
+## 11.5 Zásady UI automatizace
 
 -   Nepoužívat poziční selektory
 -   Preferovat stabilní atributy (id, name, data-\*)
@@ -578,7 +600,7 @@ Ukládání:
 
 ## 12.2 Audit
 -   Audit všech MCP volání (úspěch i neúspěch)
--   Audit všech admin akcí (login, CRUD operace)
+-   Audit všech admin akcí (login, CRUD operace, job_cancelled, job_retried)
 -   Audit bezpečnostních událostí (neplatné tokeny, rate limit, IP ban)
 
 ------------------------------------------------------------------------
@@ -599,6 +621,24 @@ Ukládání:
 -   Obsah emailu: job ID, tool, klient, chybová zpráva, timestamp
 -   Implementace: `nette/mail` (SmtpMailer nebo SendmailMailer)
 -   SMTP konfigurace v `.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`)
+
+## 13.2 Worker health monitoring
+
+-   Implicitní heartbeat: adapter zaznamenává čas každého `GET /api/internal/jobs/next`
+-   Tabulka `worker_heartbeats` — UPSERT s auto-restart detekcí (gap > 30s → reset `started_at`)
+-   Admin UI: worker status bar v layoutu (zelená=idle, modrá+pulz=busy, červená=offline, šedá=nepřipojen)
+-   Status bar je expandovatelný — uptime, naposledy viděn, aktuální job s odkazem
+-   Stav `busy` se odvozuje z tabulky `jobs` (existuje processing job)
+-   Cron skript `scripts/cron-maintenance.php` (každou minutu):
+    -   Spouští `processTimeouts()` nezávisle na workeru
+    -   Posílá email alert při offline workeru (rate-limited: max 1× za 10 minut)
+
+## 13.3 Job management z admin UI
+
+-   **Cancel** (`job_cancelled`): zruší pending/processing job, nastaví status=failed
+-   **Retry** (`job_retried`): vytvoří nový job se stejnými parametry, propojení přes `retry_of_job_id`
+-   Obě akce se logují do audit logu
+-   V job detail view se zobrazuje retry chain oběma směry (původní ↔ nový)
 
 ------------------------------------------------------------------------
 
@@ -628,7 +668,7 @@ Ukládání:
 | Service Account — edit | `/admin/service-accounts/{id}` | admin | |
 | Tools — seznam | `/admin/tools` | admin, reader | seznam toolů, admin může toggle active/inactive |
 | Jobs — seznam | `/admin/jobs` | admin, reader | tabulka s filtry (status, klient, tool, datum) |
-| Job — detail | `/admin/jobs/{id}` | admin, reader | payload, výsledek, chyba, screenshot galerie |
+| Job — detail | `/admin/jobs/{id}` | admin, reader | payload, výsledek, chyba, screenshot galerie, video přehrávání, retry chain |
 | Audit Log | `/admin/audit-log` | admin, reader | filtrovaný seznam (klient, akce, datum) |
 | Admin Users | `/admin/users` | admin | správa admin uživatelů |
 
@@ -703,6 +743,7 @@ ADAPTER_API_URL=http://localhost/api/internal
 INTERNAL_API_SECRET=dlouhy-nahodny-string
 POLL_INTERVAL_MS=5000
 SCREENSHOT_DIR=./storage/screenshots
+RECORD_VIDEO=1
 ```
 
 Debug mód Nette se řeší v `Bootstrap.php` detekcí prostředí (IP/hostname).

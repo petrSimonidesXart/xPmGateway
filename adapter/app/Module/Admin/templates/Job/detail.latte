@@ -1,6 +1,16 @@
 {block title}Job {$job->id}{/block}
 
 {block actions}
+{if in_array($job->status, ['pending', 'processing'])}
+<a href="{plink cancel $job->id}" class="btn btn-outline-danger me-2" onclick="return confirm('Opravdu zrušit tento job?')">
+    <i class="ti ti-x me-1"></i>Zrušit
+</a>
+{/if}
+{if in_array($job->status, ['failed', 'timeout'])}
+<a href="{plink retry $job->id}" class="btn btn-outline-warning me-2">
+    <i class="ti ti-refresh me-1"></i>Opakovat job
+</a>
+{/if}
 <a href="{plink default}" class="btn btn-outline-secondary">
     <i class="ti ti-arrow-left me-1"></i>Zpět na seznam
 </a>
@@ -51,6 +61,24 @@
                         <div class="datagrid-title">Trvání</div>
                         <div class="datagrid-content">{if $duration !== null}{$duration} s{else}—{/if}</div>
                     </div>
+                    {if $retryOf}
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Opakování jobu</div>
+                        <div class="datagrid-content">
+                            <a href="{plink detail $retryOf->id}"><i class="ti ti-arrow-back-up me-1"></i>{$retryOf->id|truncate(12, '…')}</a>
+                            <span class="badge badge-{$retryOf->status} ms-1">{$retryOf->status}</span>
+                        </div>
+                    </div>
+                    {/if}
+                    {if $retriedAs}
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Opakován jako</div>
+                        <div class="datagrid-content">
+                            <a href="{plink detail $retriedAs->id}"><i class="ti ti-refresh me-1"></i>{$retriedAs->id|truncate(12, '…')}</a>
+                            <span class="badge badge-{$retriedAs->status} ms-1">{$retriedAs->status}</span>
+                        </div>
+                    </div>
+                    {/if}
                 </div>
             </div>
         </div>
@@ -121,6 +149,15 @@
                                 </a>
                             </td>
                         </tr>
+                        {if str_starts_with($artifact->mime_type, 'video/')}
+                        <tr>
+                            <td colspan="5" class="p-3">
+                                <video controls class="w-100" style="max-height: 480px; background: #000;">
+                                    <source src="{plink artifactView $artifact->id}" type="{$artifact->mime_type}">
+                                </video>
+                            </td>
+                        </tr>
+                        {/if}
                     {/foreach}
                     </tbody>
                 </table>

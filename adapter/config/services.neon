@@ -6,6 +6,7 @@ services:
     - App\Model\Service\JobService
     - App\Model\Service\AuditService
     - App\Model\Service\SchemaValidator
+    - App\Model\Service\WorkerStatusService
 
     encryptionService:
         factory: App\Model\Service\EncryptionService(%security.encryptionKey%)

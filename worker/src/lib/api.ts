@@ -27,7 +27,8 @@ export class AdapterApi {
         });
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
+            const body = await response.text();
+            throw new Error(`API error: ${response.status} ${response.statusText} — ${body.substring(0, 500)}`);
         }
 
         return response.json() as Promise<{ job: any | null }>;
@@ -83,7 +84,8 @@ export class AdapterApi {
         });
 
         if (!response.ok) {
-            throw new Error(`Artifact upload error: ${response.status} ${response.statusText}`);
+            const body = await response.text();
+            throw new Error(`Artifact upload error: ${response.status} ${response.statusText} — ${body.substring(0, 500)}`);
         }
 
         return response.json() as Promise<ArtifactUploadResult>;

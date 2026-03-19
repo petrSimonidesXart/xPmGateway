@@ -6,6 +6,7 @@ namespace App\Module\Admin\Presenters;
 use App\Model\Repository\AuditLogRepository;
 use App\Model\Repository\ClientRepository;
 use App\Model\Repository\JobRepository;
+use App\Model\Service\WorkerStatusService;
 
 class DashboardPresenter extends BasePresenter
 {
@@ -13,8 +14,18 @@ class DashboardPresenter extends BasePresenter
 		private JobRepository $jobRepository,
 		private AuditLogRepository $auditLogRepository,
 		private ClientRepository $clientRepository,
+		private WorkerStatusService $workerStatusService,
 	) {
 		parent::__construct();
+	}
+
+
+	/**
+	 * AJAX endpoint for the worker status bar in admin layout.
+	 */
+	public function actionWorkerStatus(): void
+	{
+		$this->sendJson($this->workerStatusService->getStatus());
 	}
 
 

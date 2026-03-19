@@ -9,7 +9,7 @@ Dokončení základní funkcionality tak, aby systém byl nasaditelný a použit
 - [ ] **export_filtered_tasks handler**: ověřit funkčnost CSV exportu, ošetřit případ kdy filtr vrátí 0 výsledků
 - [ ] **Retry logika pro Playwright handlery**: opakovat přihlášení při selhání (network timeout, session expiry)
 - [ ] **Graceful shutdown workeru**: při SIGTERM dokončit rozpracovaný job místo tvrdého ukončení
-- [ ] **Health-check endpoint workeru**: aby orchestrátor (DDEV/Docker) věděl, že worker žije
+- [x] **Health-check workeru**: implicitní heartbeat z poll cyklu (`worker_heartbeats` tabulka), offline detekce v admin UI + email alert přes cron
 
 ### Adapter API
 - [ ] **Error handling v REST API**: Tracy debug stránky nesmí uniknout ven — vždy JSON response
@@ -19,9 +19,14 @@ Dokončení základní funkcionality tak, aby systém byl nasaditelný a použit
 
 ### Admin UI
 - [ ] **CRUD pro tools**: přidávání/editace/mazání nástrojů přímo v administraci
-- [ ] **Job detail view**: zobrazit výsledek jobu, artefakty, error message, trvání
-- [ ] **Artifact management**: zobrazit/stáhnout artefakty z admin UI
+- [x] **Job detail view**: zobrazit výsledek jobu, artefakty, error message, trvání
+- [x] **Artifact management**: zobrazit/stáhnout artefakty z admin UI
 - [ ] **Service account CRUD**: správa service accountů (credentials) v UI místo přímého SQL
+- [x] **Worker status bar**: horizontální lišta v admin UI ukazující stav workeru (idle/busy/offline), s expandovatelným detailem
+- [x] **Video nahrávání jobů**: Playwright `recordVideo` — automatický záznam průběhu každého jobu, přehrání v admin UI
+- [x] **Job retry**: tlačítko pro opakování selhané/timeout jobu (vytvoří nový job se stejnými parametry, propojení přes `retry_of_job_id`)
+- [x] **Job cancel**: tlačítko pro zrušení pending/processing jobu z admin UI
+- [x] **Audit log pro admin akce na jobech**: logování cancel/retry do audit logu
 
 ### Infrastruktura
 - [ ] **Produkční deployment konfigurace**: Docker Compose / DDEV pro produkci
@@ -47,7 +52,7 @@ Odstranění technických nedostatků, které brzdí další rozvoj nebo předst
 - [ ] **Sjednotit `LEGACY_PM_BASE_URL`**: každý handler má vlastní `process.env.LEGACY_PM_BASE_URL ?? 'https://hirola.xart.cz/...'` — centralizovat do konfigurace
 - [ ] **Sjednotit contracts cestu**: `__DIR__ . '/../../../../packages/contracts/'` je na několika místech — předat přes DI
 - [ ] **SchemaValidator**: cesta ke schématům je relativní a fragile — předat absolutní cestu přes config
-- [ ] **Job timeout handling**: worker nemá mechanismus pro timeout dlouho běžících jobů
+- [x] **Job timeout handling**: `processTimeouts()` automaticky detekuje zaseklé joby (timeout_seconds + grace period), cron skript `cron-maintenance.php` běží nezávisle na workeru
 - [ ] **DB indexy**: přidat chybějící indexy na `jobs.status`, `jobs.client_id`, `audit_log.created_at`
 - [ ] **Migrace**: přejít na systémový migration tool (Nextras Migrations / Doctrine Migrations) místo ručních SQL souborů
 
@@ -101,8 +106,9 @@ Vylepšení, která nejsou kritická, ale zlepší UX, výkon nebo rozšiřiteln
 ### Admin UI
 - [ ] **Dashboard s grafy**: počet jobů za den, chybovost, průměrná doba
 - [ ] **Bulk operace**: hromadné mazání jobů, deaktivace tokenů
-- [ ] **Dark mode** 🌙
-- [ ] **Notifikace v UI**: při dokončení jobu, při chybě
+- [ ] **Dark mode**
+- [x] **Notifikace v UI**: toast notifikace při dokončení/selhání jobu + worker status bar
+- [ ] **Aktualizace textů v UI**: sjednotit české texty, přeložit anglické placeholdery, konzistentní terminologie
 
 ### Integrace
 - [ ] **Make.com šablona**: předpřipravený scénář pro běžné use-cases
