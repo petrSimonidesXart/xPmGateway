@@ -121,3 +121,27 @@ Vylepšení, která nejsou kritická, ale zlepší UX, výkon nebo rozšiřiteln
 - [ ] **Connection pooling**: pro DB připojení v adapteru
 - [ ] **Response caching**: cachovat OpenAPI spec (invalidovat při změně permissions)
 - [ ] **Worker scaling**: podpora více worker instancí s lock mechanismem
+
+---
+
+## Milník 5: Scenario Builder — vizuální tvorba toolů
+
+Umožnit vytvářet nové Playwright tooly bez psaní kódu, pomocí nahrávání a vizuálního editoru.
+
+### Fáze 1: JSON scénáře + generický runner
+- [ ] **JSON scenario formát**: deklarativní popis kroků (goto, fill, click, wait, screenshot, scrape)
+- [ ] **Scenario runner handler**: generický worker handler `run_scenario`, který vykoná libovolný JSON scénář
+- [ ] **DB tabulka `scenarios`**: uložení scénářů (name, steps JSON, input schema, napojení na tool)
+- [ ] **Admin UI CRUD scénářů**: vytváření/editace kroků, náhled, test run s videem/screenshoty
+
+### Fáze 2: Import z Playwright codegen
+- [ ] **Lokální nahrávání**: uživatel spustí `npx playwright codegen` u sebe, nakliká scénář
+- [ ] **Import do admin UI**: upload/paste vygenerovaného kódu, parsování do JSON scénáře
+- [ ] **Mapování proměnných**: UI pro namapování payload parametrů na selektory (co kam vyplnit)
+- [ ] **Test & refine**: spuštění importovaného scénáře s test daty, úprava kroků
+
+### Fáze 3 (experimentální): In-browser nahrávání přes noVNC
+- [ ] **Xvfb + noVNC na serveru**: Playwright codegen s viditelným prohlížečem, streamovaný přes WebSocket
+- [ ] **noVNC iframe v admin UI**: uživatel kliká přímo v admin UI, na pozadí se generuje scénář
+- [ ] **Automatická konverze**: po ukončení nahrávání se codegen výstup parsuje do JSON scénáře
+- [ ] **Bezpečnost**: izolace session, timeout, omezení přístupu k nahrávání
