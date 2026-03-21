@@ -208,12 +208,47 @@
     </div>
     {/if}
     {if $job->result && $job->status !== 'awaiting_input'}
+    {var $resultData = json_decode($job->result, true)}
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center">
                 <h3 class="card-title">Výsledek</h3>
+                <button class="btn btn-sm btn-ghost-secondary ms-auto" onclick="var j=document.getElementById('result-json'),t=document.getElementById('result-table');j.classList.toggle('d-none');t.classList.toggle('d-none');">
+                    <i class="ti ti-code me-1"></i>JSON
+                </button>
             </div>
-            <div class="card-body">
+            <div id="result-table">
+                {if is_array($resultData)}
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-sm">
+                        <tbody>
+                        {foreach $resultData as $key => $value}
+                            {continueIf $key === '_progress' || $key === 'options'}
+                            <tr>
+                                <td class="text-secondary fw-bold" style="width: 180px;">{$key}</td>
+                                <td>
+                                    {if is_bool($value)}
+                                        {if $value}<span class="badge bg-green">true</span>{else}<span class="badge bg-secondary">false</span>{/if}
+                                    {elseif is_null($value)}
+                                        <span class="text-secondary">—</span>
+                                    {elseif is_array($value)}
+                                        <pre class="mb-0 pre-scroll" style="max-height: 200px;"><code>{$value|json_encode(\JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE)}</code></pre>
+                                    {else}
+                                        {$value}
+                                    {/if}
+                                </td>
+                            </tr>
+                        {/foreach}
+                        </tbody>
+                    </table>
+                </div>
+                {else}
+                <div class="card-body">
+                    <pre class="mb-0 pre-scroll"><code>{$job->result}</code></pre>
+                </div>
+                {/if}
+            </div>
+            <div id="result-json" class="card-body d-none">
                 <pre class="mb-0 pre-scroll"><code>{$job->result}</code></pre>
             </div>
         </div>
