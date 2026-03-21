@@ -1,0 +1,83 @@
+{block title}Nový scénář{/block}
+
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Scénáře</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nový scénář</li>
+</ol>
+{/block}
+
+{block content}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                {form scenarioForm}
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['name']->htmlId}">Identifikátor</label>
+                        {input name, class => 'form-control'}
+                        <small class="form-hint">Unikátní název bez mezer, např. <code>add_comment</code></small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['description']->htmlId}">Popis</label>
+                        {input description, class => 'form-control'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['input_schema']->htmlId}">Vstupní schéma (JSON Schema)</label>
+                        {input input_schema}
+                        <small class="form-hint">Definuje jaké parametry scénář přijímá od volajícího</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['steps']->htmlId}">Kroky (JSON)</label>
+                        {input steps}
+                        <small class="form-hint">Pole kroků: <code n:syntax="off">[{"id": "login", "type": "tool", "tool": "pm_login"}, ...]</code></small>
+                    </div>
+                    <div class="mb-3">
+                        {input is_active, class => 'form-check-input'}
+                        <label class="form-check-label" for="{$form['is_active']->htmlId}">Aktivní</label>
+                    </div>
+                    {if $form->hasErrors()}
+                        <div class="alert alert-danger">
+                            {foreach $form->errors as $error}
+                                <div>{$error}</div>
+                            {/foreach}
+                        </div>
+                    {/if}
+                    <div class="d-flex justify-content-end">
+                        {input send, class => 'btn btn-primary'}
+                    </div>
+                {/form}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-info-circle me-1"></i>Nápověda</h3>
+            </div>
+            <div class="card-body">
+                <h4 class="mb-2">Typy kroků</h4>
+                <ul class="mb-3">
+                    <li><code>tool</code> — spustí nástroj</li>
+                    <li><code>condition</code> — větvení (if/then/else)</li>
+                    <li><code>loop</code> — cyklus přes pole</li>
+                </ul>
+                <h4 class="mb-2">Template výrazy</h4>
+                <ul class="mb-3">
+                    <li><code n:syntax="off">{{input.project}}</code> — vstupní parametr</li>
+                    <li><code n:syntax="off">{{step_id.output.field}}</code> — výstup předchozího kroku</li>
+                </ul>
+                <h4 class="mb-2">Příklad kroku</h4>
+                <pre class="mb-0" n:syntax="off"><code>{
+  "id": "project",
+  "type": "tool",
+  "tool": "pm_open_project",
+  "input": {
+    "query": "{{input.project}}"
+  }
+}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}

@@ -1,0 +1,51 @@
+{block title}Upravit scénář{/block}
+
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Scénáře</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Upravit</li>
+</ol>
+{/block}
+
+{block content}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                {form scenarioForm}
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['name']->htmlId}">Identifikátor</label>
+                        {input name, class => 'form-control'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['description']->htmlId}">Popis</label>
+                        {input description, class => 'form-control'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['input_schema']->htmlId}">Vstupní schéma (JSON Schema)</label>
+                        {input input_schema}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['steps']->htmlId}">Kroky (JSON)</label>
+                        {input steps}
+                    </div>
+                    <div class="mb-3">
+                        {input is_active, class => 'form-check-input'}
+                        <label class="form-check-label" for="{$form['is_active']->htmlId}">Aktivní</label>
+                    </div>
+                    {if $form->hasErrors()}
+                        <div class="alert alert-danger">
+                            {foreach $form->errors as $error}
+                                <div>{$error}</div>
+                            {/foreach}
+                        </div>
+                    {/if}
+                    <div class="d-flex justify-content-end">
+                        {input send, class => 'btn btn-primary'}
+                    </div>
+                {/form}
+            </div>
+        </div>
+    </div>
+</div>
+{/block}

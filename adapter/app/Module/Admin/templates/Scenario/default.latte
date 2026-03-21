@@ -1,0 +1,64 @@
+{block title}Scénáře{/block}
+
+{block actions}
+{if $isAdmin}
+<a href="{plink create}" class="btn btn-primary">
+    <i class="ti ti-plus me-1"></i>Nový scénář
+</a>
+{/if}
+{/block}
+
+{block content}
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>Název</th>
+                    <th>Popis</th>
+                    <th>Kroků</th>
+                    <th>Aktivní</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach $scenarios as $scenario}
+                {var $steps = json_decode($scenario->steps, true)}
+                <tr>
+                    <td><a href="{plink detail $scenario->id}"><code>{$scenario->name}</code></a></td>
+                    <td class="text-secondary">{$scenario->description}</td>
+                    <td><span class="badge bg-blue-lt">{count($steps)} kroků</span></td>
+                    <td>
+                        {if $scenario->is_active}
+                            <span class="badge bg-green">Ano</span>
+                        {else}
+                            <span class="badge bg-secondary">Ne</span>
+                        {/if}
+                    </td>
+                    <td>
+                        {if $isAdmin}
+                        <div class="btn-list">
+                            <a href="{plink edit $scenario->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
+                            <form method="post" action="{plink toggle! id => $scenario->id}" class="d-inline">
+                                <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                <button type="submit" n:class="btn, btn-sm, $scenario->is_active ? btn-outline-warning : btn-outline-success">
+                                    {if $scenario->is_active}Deaktivovat{else}Aktivovat{/if}
+                                </button>
+                            </form>
+                        </div>
+                        {/if}
+                    </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="5" class="text-center text-secondary py-4">
+                        <i class="ti ti-mood-empty" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Žádné scénáře.</p>
+                    </td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+    </div>
+</div>
+{/block}

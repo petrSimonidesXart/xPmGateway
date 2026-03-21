@@ -95,6 +95,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:Scenario:*') ? active" href="{plink :Admin:Scenario:default}">
+                            <span class="nav-link-icon"><i class="ti ti-route"></i></span>
+                            <span class="nav-link-title">Scénáře</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:AuditLog:*') ? active" href="{plink :Admin:AuditLog:default}">
                             <span class="nav-link-icon"><i class="ti ti-file-text"></i></span>
                             <span class="nav-link-title">Audit log</span>

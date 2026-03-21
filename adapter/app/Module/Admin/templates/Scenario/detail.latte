@@ -1,0 +1,231 @@
+{block title}Scénář: {$scenario->name}{/block}
+
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Scénáře</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{$scenario->name}</li>
+</ol>
+{/block}
+
+{block actions}
+{if $isAdmin}
+<div class="btn-list">
+    <a href="{plink edit $scenario->id}" class="btn btn-outline-secondary">
+        <i class="ti ti-edit me-1"></i>Upravit
+    </a>
+</div>
+{/if}
+{/block}
+
+{block content}
+<div class="row row-cards">
+    {* Info card *}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Informace</h3>
+            </div>
+            <div class="card-body">
+                <div class="datagrid">
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Identifikátor</div>
+                        <div class="datagrid-content"><code>{$scenario->name}</code></div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Popis</div>
+                        <div class="datagrid-content">{$scenario->description}</div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Aktivní</div>
+                        <div class="datagrid-content">
+                            {if $scenario->is_active}<span class="badge bg-green">Ano</span>{else}<span class="badge bg-secondary">Ne</span>{/if}
+                        </div>
+                    </div>
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Počet kroků</div>
+                        <div class="datagrid-content"><span class="badge bg-blue-lt">{count($steps)}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {* Steps visualization *}
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-list-check me-1"></i>Kroky scénáře</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-sm">
+                    <thead>
+                        <tr>
+                            <th class="w-1">#</th>
+                            <th>ID</th>
+                            <th>Typ</th>
+                            <th>Nástroj</th>
+                            <th>Vstup</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $steps as $i => $step}
+                        <tr>
+                            <td class="text-secondary">{$i + 1}</td>
+                            <td><code>{$step['id']}</code></td>
+                            <td>
+                                {if $step['type'] === 'tool'}
+                                    <span class="badge bg-blue-lt">tool</span>
+                                {elseif $step['type'] === 'condition'}
+                                    <span class="badge bg-yellow-lt">condition</span>
+                                {elseif $step['type'] === 'loop'}
+                                    <span class="badge bg-purple-lt">loop</span>
+                                {else}
+                                    <span class="badge bg-secondary">{$step['type']}</span>
+                                {/if}
+                            </td>
+                            <td><code>{$step['tool'] ?? '—'}</code></td>
+                            <td class="text-secondary small">
+                                {if isset($step['input'])}
+                                    {foreach $step['input'] as $key => $val}
+                                        <span class="me-2"><code>{$key}</code>: {is_string($val) ? $val : json_encode($val)}</span>
+                                    {/foreach}
+                                {else}
+                                    —
+                                {/if}
+                            </td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {* Run form *}
+    {if $isAdmin && $scenario->is_active}
+    <div class="col-lg-5">
+        <div class="card border-green">
+            <div class="card-header bg-green text-white">
+                <h3 class="card-title text-white"><i class="ti ti-player-play me-1"></i>Spustit scénář</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{plink run! id => $scenario->id}">
+                    <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                    <div class="mb-3">
+                        <label class="form-label">Klient</label>
+                        <select name="client_id" class="form-select" required>
+                            <option value="">— Vyber klienta —</option>
+                            {foreach $clients as $cid => $cname}
+                                <option value="{$cid}">{$cname}</option>
+                            {/foreach}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Service Account</label>
+                        <select name="service_account_id" class="form-select" required>
+                            <option value="">— Vyber service account —</option>
+                            {foreach $serviceAccounts as $sa}
+                                <option value="{$sa->id}">{$sa->name} ({$sa->username})</option>
+                            {/foreach}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Vstupní data (JSON)</label>
+                        {var $schemaProps = $inputSchema['properties'] ?? []}
+                        {var $exampleInput = []}
+                        {foreach $schemaProps as $key => $prop}
+                            {var $exampleInput[$key] = ''}
+                        {/foreach}
+                        <textarea name="scenario_input" class="form-control font-monospace" rows="8" required>{json_encode($exampleInput ?: new \stdClass, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE)}</textarea>
+                        {if $schemaProps}
+                        <small class="form-hint mt-1">
+                            Parametry:
+                            {foreach $schemaProps as $key => $prop}
+                                <code>{$key}</code>{if isset($prop['description'])} ({$prop['description']}){/if}{sep}, {/sep}
+                            {/foreach}
+                        </small>
+                        {/if}
+                    </div>
+                    <button type="submit" class="btn btn-green w-100" data-confirm="Spustit scénář {$scenario->name}?">
+                        <i class="ti ti-player-play me-1"></i>Spustit
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {/if}
+
+    {* Input schema *}
+    {if $schemaProps}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-forms me-1"></i>Vstupní parametry</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Parametr</th>
+                            <th>Typ</th>
+                            <th>Popis</th>
+                            <th>Povinný</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {var $required = $inputSchema['required'] ?? []}
+                    {foreach $schemaProps as $key => $prop}
+                        <tr>
+                            <td><code>{$key}</code></td>
+                            <td class="text-secondary">{$prop['type'] ?? '?'}</td>
+                            <td class="text-secondary">{$prop['description'] ?? ''}</td>
+                            <td>
+                                {if in_array($key, $required)}
+                                    <span class="badge bg-red-lt">povinný</span>
+                                {else}
+                                    <span class="badge bg-muted">volitelný</span>
+                                {/if}
+                            </td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {/if}
+
+    {* Recent runs *}
+    {if $recentRuns}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-history me-1"></i>Poslední spuštění</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Status</th>
+                            <th>Klient</th>
+                            <th>Vytvořen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $recentRuns as $run}
+                        <tr>
+                            <td><a href="{plink :Admin:Job:detail $run->id}"><code title="{$run->id}">{$run->id|truncate(12, '…')}</code></a></td>
+                            <td><span class="badge badge-{$run->status}">{$run->status}</span></td>
+                            <td class="text-secondary">{$run->ref('clients', 'client_id')?->name}</td>
+                            <td class="text-secondary">{$run->created_at|date:'d.m.Y H:i:s'}</td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {/if}
+</div>
+{/block}
