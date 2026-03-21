@@ -235,7 +235,8 @@ class JobPresenter extends BasePresenter
 
 
 	/**
-	 * Retry a failed/timeout job by creating a new one with the same parameters (POST only).
+	 * Retry a failed/timeout/awaiting_input job by creating a new one.
+	 * For awaiting_input: merges selected option (path_info) into payload.
 	 */
 	public function handleRetry(string $id): void
 	{
@@ -246,16 +247,25 @@ class JobPresenter extends BasePresenter
 			$this->error('Job not found');
 		}
 
-		if (!in_array($job->status, ['failed', 'timeout'], true)) {
-			$this->flashMessage('Opakovat lze pouze selhané nebo timeout joby.', 'warning');
+		if (!in_array($job->status, ['failed', 'timeout', 'awaiting_input'], true)) {
+			$this->flashMessage('Opakovat lze pouze selhané, timeout nebo čekající joby.', 'warning');
 			$this->redirect('detail', $id);
+		}
+
+		// Build payload — for awaiting_input, merge selected path_info
+		$payload = json_decode($job->payload, true) ?? [];
+		$selectedPathInfo = $this->getHttpRequest()->getPost('selected_path_info');
+		if ($selectedPathInfo && $job->status === 'awaiting_input') {
+			$payload['path_info'] = $selectedPathInfo;
+			// Remove query to force direct navigation
+			unset($payload['query']);
 		}
 
 		$newJob = $this->jobRepository->create([
 			'client_id' => $job->client_id,
 			'service_account_id' => $job->service_account_id,
 			'tool_id' => $job->tool_id,
-			'payload' => $job->payload,
+			'payload' => json_encode($payload),
 			'status' => 'pending',
 			'timeout_seconds' => $job->timeout_seconds,
 			'retry_of_job_id' => $job->id,

@@ -68,6 +68,8 @@ class JobFacade
 
 		if ($status === 'success') {
 			$this->jobService->completeJob($jobId, $result ?? [], $screenshots);
+		} elseif ($status === 'awaiting_input') {
+			$this->jobService->setAwaitingInput($jobId, $result, $screenshots);
 		} else {
 			$this->jobService->failJob($jobId, $error ?? 'Unknown error', $screenshots);
 

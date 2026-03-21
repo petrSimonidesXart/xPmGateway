@@ -78,6 +78,21 @@ class JobService
 	}
 
 
+	public function setAwaitingInput(string $jobId, ?array $result, ?array $screenshots = null): void
+	{
+		$data = [
+			'status' => 'awaiting_input',
+			'result' => $result ? json_encode($result) : null,
+		];
+
+		if ($screenshots !== null) {
+			$data['screenshots'] = json_encode($screenshots);
+		}
+
+		$this->jobRepository->getTable()->where('id', $jobId)->update($data);
+	}
+
+
 	/**
 	 * Mark timed-out jobs and reset eligible ones for retry.
 	 */

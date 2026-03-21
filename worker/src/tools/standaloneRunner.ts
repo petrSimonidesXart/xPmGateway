@@ -89,14 +89,28 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 		ctx.log(`Spouštím nástroj ${job.tool_name}...`);
 		const output = await tool(ctx, job.payload);
 
-		ctx.log(output.success ? 'Nástroj dokončen úspěšně' : `Nástroj selhal: ${output.error}`);
+		if (output.needs_input) {
+			// Tool needs disambiguation — pause job
+			ctx.log(`Čekám na vstup: ${output.input_prompt ?? 'vyberte z možností'}`);
 
-		await api.submitResult(job.id, {
-			status: output.success ? 'success' : 'failed',
-			result: { ...output, _progress: progressLog },
-			error: output.success ? undefined : (output.error as string | undefined),
-			screenshots: screenshots.getScreenshots(),
-		});
+			await api.submitAwaitingInput(job.id, {
+				options: (output.options ?? []) as Array<Record<string, unknown>>,
+				input_prompt: (output.input_prompt as string) ?? 'Vyberte z možností',
+				original_payload: job.payload,
+				tool_name: job.tool_name,
+			}, screenshots.getScreenshots());
+
+			console.log(`[Worker] Job ${job.id} (${job.tool_name}) → awaiting_input`);
+		} else {
+			ctx.log(output.success ? 'Nástroj dokončen úspěšně' : `Nástroj selhal: ${output.error}`);
+
+			await api.submitResult(job.id, {
+				status: output.success ? 'success' : 'failed',
+				result: { ...output, _progress: progressLog },
+				error: output.success ? undefined : (output.error as string | undefined),
+				screenshots: screenshots.getScreenshots(),
+			});
+		}
 	} catch (error) {
 		try { await screenshots.capture(page, 'error'); } catch { /* ignore */ }
 		const message = error instanceof Error ? error.message : String(error);

@@ -1,15 +1,34 @@
 import type { ToolContext, ToolOutput } from '../types.js';
-import { safeClick, safeFill, fail } from './helpers.js';
+import { safeClick, safeWaitFor, safeFill, fail } from './helpers.js';
 
 /**
  * pm_open_project: Search for a project by name and open it.
- * Input: { query: string }
+ * Input: { query: string } OR { path_info: string } (direct navigation, skips search)
  * Output: { success, name, path_info, count, results[] }
  */
 export async function pmOpenProject(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
+	const pathInfo = input.path_info as string | undefined;
 	const query = String(input.query ?? '');
+
+	// Direct navigation by path_info — no search, no ambiguity
+	if (pathInfo) {
+		ctx.log(`Otevírám projekt přímo: ${pathInfo}`);
+		await ctx.page.goto(`${ctx.baseUrl}?path_info=${encodeURIComponent(pathInfo)}`);
+		await ctx.page.waitForLoadState('networkidle');
+
+		const title = await ctx.page.locator('h1, h2').first().textContent().catch(() => pathInfo);
+		ctx.log(`Projekt "${title?.trim()}" otevřen`);
+		return {
+			success: true,
+			name: title?.trim() ?? pathInfo,
+			path_info: pathInfo,
+			count: 1,
+			results: [{ name: title?.trim() ?? pathInfo, path_info: pathInfo }],
+		};
+	}
+
 	if (!query) {
-		return fail('Chybí povinný parametr: query');
+		return fail('Chybí povinný parametr: query nebo path_info');
 	}
 
 	ctx.log(`Hledám projekt "${query}"...`);
@@ -22,7 +41,7 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 		return fail('Menu položka "Projekty" nenalezena — možná nejste přihlášeni');
 	}
 
-	// Wait for project list to load via AJAX — poll DOM until elements appear
+	// Wait for project list to load via AJAX
 	ctx.log('Čekám na načtení seznamu projektů...');
 	try {
 		await ctx.page.waitForFunction(
@@ -30,9 +49,6 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 			{ timeout: 15_000 },
 		);
 	} catch {
-		// Capture what's on the page for debugging
-		const html = await ctx.page.locator('#menu_popup').innerHTML().catch(() => 'N/A');
-		ctx.log(`Popup HTML (zkráceno): ${html.substring(0, 300)}`);
 		return fail('Seznam projektů se nenačetl (AJAX timeout)');
 	}
 
@@ -50,14 +66,13 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 		await altFilter.first().click();
 		await altFilter.first().pressSequentially(query, { delay: 50 });
 	} else {
-		// Use pressSequentially to trigger JS keyup/input events for filtering
 		await filterInput.click();
 		await filterInput.pressSequentially(query, { delay: 50 });
 	}
 
 	ctx.log(`Filtruju projekty podle "${query}"...`);
 
-	// Wait for filter to apply — JS hides non-matching rows via display:none
+	// Wait for filter to apply — poll until visible count stabilizes
 	await ctx.page.waitForTimeout(500);
 	let prevCount = -1;
 	for (let i = 0; i < 15; i++) {
@@ -89,9 +104,9 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 			const name = link.textContent?.trim() ?? '';
 			const href = link.getAttribute('href') ?? '';
 			const pathMatch = /path_info=([^&]+)/.exec(href);
-			const pathInfo = pathMatch ? decodeURIComponent(pathMatch[1]) : '';
-			if (name && pathInfo) {
-				items.push({ name, path_info: pathInfo });
+			const pathInfoVal = pathMatch ? decodeURIComponent(pathMatch[1]) : '';
+			if (name && pathInfoVal) {
+				items.push({ name, path_info: pathInfoVal });
 			}
 		}
 		return items;
@@ -103,10 +118,12 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 	}
 
 	if (results.length > 1) {
-		ctx.log(`Nalezeno ${results.length} projektů: ${results.map((r) => r.name).join(', ')}`);
+		ctx.log(`Nalezeno ${results.length} projektů — potřebuji upřesnění`);
 		return {
 			success: false,
-			error: `Nalezeno ${results.length} projektů pro "${query}". Upřesněte název.`,
+			needs_input: true,
+			input_prompt: `Nalezeno ${results.length} projektů pro "${query}". Vyberte projekt:`,
+			options: results,
 			count: results.length,
 			results,
 		};
@@ -114,8 +131,6 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 
 	// Exactly 1 result — click it
 	ctx.log(`Nalezen projekt "${results[0].name}", otevírám...`);
-
-	// Click the visible link matching the result
 	await ctx.page.evaluate((projectName) => {
 		const rows = document.querySelectorAll('.menu_navigation_row');
 		for (const row of rows) {

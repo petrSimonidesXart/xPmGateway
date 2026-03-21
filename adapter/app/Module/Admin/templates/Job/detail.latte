@@ -157,7 +157,39 @@
             </div>
         </div>
     </div>
-    {if $job->result}
+    {if $job->status === 'awaiting_input' && $job->awaiting_input_context}
+    {var $awCtx = json_decode($job->awaiting_input_context, true)}
+    <div class="col-12">
+        <div class="card border-purple">
+            <div class="card-header bg-purple text-white">
+                <h3 class="card-title text-white">
+                    <i class="ti ti-help me-1"></i>Čeká na vstup
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">{$awCtx['input_prompt'] ?? 'Vyberte z možností:'}</p>
+                <div class="list-group">
+                    {foreach $awCtx['options'] ?? [] as $option}
+                    <form method="post" action="{plink retry! id => $job->id}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                        <input type="hidden" name="selected_path_info" value="{$option['path_info'] ?? ''}">
+                        <div>
+                            <strong>{$option['name'] ?? '?'}</strong>
+                            {if isset($option['path_info'])}
+                                <small class="text-secondary ms-2"><code>{$option['path_info']}</code></small>
+                            {/if}
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-purple">
+                            <i class="ti ti-check me-1"></i>Vybrat
+                        </button>
+                    </form>
+                    {/foreach}
+                </div>
+            </div>
+        </div>
+    </div>
+    {/if}
+    {if $job->result && $job->status !== 'awaiting_input'}
     <div class="col-12">
         <div class="card">
             <div class="card-header">

@@ -70,6 +70,15 @@ class JobsPresenter extends Presenter
 
 		try {
 			$this->jobFacade->handleJobResult($id, $status, $result, $error, $screenshots);
+
+			// Store awaiting_input_context if provided
+			$awaitingContext = $body['awaiting_input_context'] ?? null;
+			if ($awaitingContext && $status === 'awaiting_input') {
+				$this->jobRepository->getTable()->where('id', $id)->update([
+					'awaiting_input_context' => Json::encode($awaitingContext),
+				]);
+			}
+
 			$this->sendJson(['ok' => true]);
 		} catch (McpException $e) {
 			$this->getHttpResponse()->setCode($e->getHttpCode());

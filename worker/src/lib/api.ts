@@ -129,6 +129,42 @@ export class AdapterApi {
     }
 
     /**
+     * Mark a job as awaiting_input with disambiguation options.
+     */
+    async submitAwaitingInput(
+        jobId: string,
+        context: {
+            options: Array<Record<string, unknown>>;
+            input_prompt: string;
+            original_payload: Record<string, unknown>;
+            tool_name: string;
+        },
+        screenshots?: Array<{ step: string; file: string }>,
+    ): Promise<void> {
+        const response = await fetch(`${this.baseUrl}/jobs/${jobId}/result`, {
+            method: 'POST',
+            headers: {
+                ...this.getHeaders(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: 'awaiting_input',
+                result: {
+                    needs_input: true,
+                    options: context.options,
+                    input_prompt: context.input_prompt,
+                },
+                awaiting_input_context: context,
+                screenshots,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status} ${response.statusText}`);
+        }
+    }
+
+    /**
      * Send progress update for a running job (step_results, partial log).
      * Non-critical — failures are silently ignored.
      */

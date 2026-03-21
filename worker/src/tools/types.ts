@@ -20,6 +20,12 @@ export interface ToolContext {
 /** Standard output returned by every tool. */
 export interface ToolOutput {
 	success: boolean;
+	/** When true, tool needs user to select/refine input before continuing. */
+	needs_input?: boolean;
+	/** Options for the user to select from (used with needs_input). */
+	options?: Array<Record<string, unknown>>;
+	/** Description of what input is needed. */
+	input_prompt?: string;
 	[key: string]: unknown;
 }
 
