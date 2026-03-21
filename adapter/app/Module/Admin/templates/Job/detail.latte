@@ -272,9 +272,10 @@
 </div>
 
 {if in_array($job->status, ['pending', 'processing'])}
+<div id="progress-poll-config" class="d-none" data-url="{plink progress $job->id}"></div>
 <script n:syntax="off">
 (function() {
-    var POLL_URL = '{plink progress $job->id}';
+    var POLL_URL = document.getElementById('progress-poll-config').dataset.url;
     var body = document.getElementById('progress-body');
     var card = document.getElementById('progress-card');
     var spinner = document.getElementById('progress-spinner');
