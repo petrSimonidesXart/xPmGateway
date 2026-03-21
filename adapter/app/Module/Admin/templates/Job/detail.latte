@@ -11,7 +11,7 @@
 {if in_array($job->status, ['pending', 'processing'])}
 <form method="post" action="{plink cancel! id => $job->id}" class="d-inline me-2">
     <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
-    <button type="submit" class="btn btn-outline-danger" data-confirm="Opravdu zrušit tuto úlohu?">
+    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Opravdu zrušit tuto úlohu?')">
         <i class="ti ti-x me-1"></i>Zrušit
     </button>
 </form>
