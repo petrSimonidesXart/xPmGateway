@@ -36,18 +36,23 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 	ctx.log(`Vyplňuji komentář (${text.length} znaků)...`);
 	await editor.fill(text);
 
-	// Submit — click the submit button in the comment form
+	// Submit — click the submit button in comment form
 	ctx.log('Odesílám komentář...');
-	const submitted = await safeClick(
-		ctx, ctx.page.getByRole('button', { name: 'Komentář' }), 'Tlačítko "Komentář"',
-	);
-	if (!submitted) {
-		// Fallback: try any submit button near the editor
-		const fallbackBtn = ctx.page.locator('.redactor_visual_editor_textarea').locator('..').locator('button[type="submit"], input[type="submit"]');
-		if (await fallbackBtn.count() > 0) {
-			await fallbackBtn.first().click();
+	const submitBtn = ctx.page.locator('.comment_form_main_buttons button[type="submit"], .comment_form_main_buttons input[type="submit"]');
+	if (await submitBtn.count() > 0) {
+		await submitBtn.first().click();
+	} else {
+		// Fallback: try role-based and other selectors
+		const fallback = ctx.page.getByRole('button', { name: 'Komentář' });
+		if (await fallback.count() > 0) {
+			await fallback.first().click();
 		} else {
-			return fail('Tlačítko pro odeslání komentáře nenalezeno');
+			const anySubmit = ctx.page.locator('form button[type="submit"]').last();
+			if (await anySubmit.count() > 0) {
+				await anySubmit.click();
+			} else {
+				return fail('Tlačítko pro odeslání komentáře nenalezeno — jste na stránce úkolu? Máte oprávnění k této akci na daném projektu?');
+			}
 		}
 	}
 
