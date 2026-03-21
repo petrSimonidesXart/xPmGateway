@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
+import { loginToLegacySystem } from '../lib/auth.js';
 import { VideoRecorder } from '../lib/video.js';
 import { toolRegistry } from './registry.js';
 import { resolveTemplates, evaluateCondition } from './templateParser.js';
@@ -42,6 +43,18 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 	const page = await context.newPage();
 	page.setDefaultTimeout(job.timeout_seconds * 1000);
 
+	// Progress log for real-time updates
+	const progressLog: Array<{ time: string; message: string }> = [];
+
+	function sendProgress(): void {
+		api.updateProgress(job.id, progressLog.map((entry, i) => ({
+			id: `log-${i}`,
+			status: 'success' as const,
+			output: { message: entry.message },
+			duration_ms: 0,
+		}))).catch(() => {});
+	}
+
 	const ctx: ToolContext = {
 		page,
 		baseUrl: LEGACY_PM_BASE_URL,
@@ -52,7 +65,9 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 		},
 		api,
 		log: (message: string) => {
+			progressLog.push({ time: new Date().toISOString(), message });
 			console.log(`[Scenario] ${scenarioDef.name}: ${message}`);
+			sendProgress();
 		},
 	};
 
@@ -65,6 +80,16 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 	let totalSteps = 0;
 
 	try {
+		// Auto-login for scenarios
+		ctx.log('Přihlašuji se do PM aplikace...');
+		await loginToLegacySystem(
+			page,
+			LEGACY_PM_BASE_URL,
+			job.service_account.username,
+			job.service_account.password,
+		);
+		ctx.log('Přihlášení úspěšné');
+
 		await executeSteps(ctx, scenarioDef.steps, bag, stepResults, () => ++totalSteps);
 
 		const allSuccess = stepResults.every((r) => r.status !== 'failed');
@@ -161,7 +186,7 @@ async function executeToolStep(
 	const rawInput = (step.input && !Array.isArray(step.input)) ? step.input : {};
 	const resolvedInput = resolveTemplates(rawInput, bag) as Record<string, unknown>;
 
-	console.log(`[Scenario] Step ${stepNum} (${step.id}): ${step.tool}`);
+	ctx.log(`Krok ${stepNum}: ${step.tool} (${step.id})`);
 
 	try {
 		const output = await toolFn(ctx, resolvedInput);
@@ -245,7 +270,7 @@ async function executeConditionStep(
 	const resolved = resolveTemplates(step.if, bag) as string;
 	const result = evaluateCondition(String(resolved), bag);
 
-	console.log(`[Scenario] Condition (${step.id}): "${step.if}" → ${result}`);
+	ctx.log(`Podmínka (${step.id}): ${result ? 'splněna' : 'nesplněna'}`);
 
 	if (result) {
 		await executeSteps(ctx, step.then, bag, stepResults, incrementCounter);
@@ -268,7 +293,7 @@ async function executeLoopStep(
 		throw new Error(`Loop step "${step.id}": expected array for "over", got ${typeof items}`);
 	}
 
-	console.log(`[Scenario] Loop (${step.id}): ${items.length} iterations`);
+	ctx.log(`Cyklus (${step.id}): ${items.length} iterací`);
 
 	for (let i = 0; i < items.length; i++) {
 		// Set loop variable in bag

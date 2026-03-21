@@ -38,7 +38,7 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 		ctx, ctx.page.locator('#menu_item_projects a'), 'Menu položka Projekty',
 	);
 	if (!menuClicked) {
-		return fail('Menu položka "Projekty" nenalezena — možná nejste přihlášeni');
+		return fail('Menu položka "Projekty" nenalezena — jste přihlášeni? Máte oprávnění k této akci na daném projektu?');
 	}
 
 	// Wait for project list to load via AJAX

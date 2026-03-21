@@ -22,7 +22,7 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 		ctx, ctx.page.getByRole('link', { name: 'Přidat komentář' }), 'Odkaz "Přidat komentář"',
 	);
 	if (!clicked) {
-		return fail('Odkaz "Přidat komentář" nenalezen — jste na stránce úkolu?');
+		return fail('Odkaz "Přidat komentář" nenalezen — jste na stránce úkolu? Máte oprávnění k této akci na daném projektu?');
 	}
 
 	// Wait for Redactor editor to appear

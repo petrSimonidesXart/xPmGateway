@@ -46,7 +46,7 @@ export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown
 		ctx, ctx.page.getByRole('link', { name: 'Úkoly', exact: true }), 'Odkaz "Úkoly" v menu projektu',
 	);
 	if (!tasksClicked) {
-		return fail('Odkaz "Úkoly" nenalezen — jste na stránce projektu?');
+		return fail('Odkaz "Úkoly" nenalezen — jste na stránce projektu? Máte oprávnění k této akci na daném projektu?');
 	}
 	await ctx.page.waitForLoadState('networkidle');
 
