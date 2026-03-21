@@ -7,6 +7,8 @@ import { loginToLegacySystem } from '../../lib/auth.js';
  * Output: { success, logged_in }
  */
 export async function pmLogin(ctx: ToolContext, _input: Record<string, unknown>): Promise<ToolOutput> {
+	ctx.log('Přihlašuji se do PM aplikace...');
+
 	await loginToLegacySystem(
 		ctx.page,
 		ctx.baseUrl,
@@ -14,5 +16,6 @@ export async function pmLogin(ctx: ToolContext, _input: Record<string, unknown>)
 		ctx.job.service_account.password,
 	);
 
+	ctx.log('Přihlášení úspěšné');
 	return { success: true, logged_in: true };
 }

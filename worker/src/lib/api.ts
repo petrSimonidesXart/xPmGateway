@@ -128,6 +128,28 @@ export class AdapterApi {
         return response.json() as Promise<ArtifactUploadResult>;
     }
 
+    /**
+     * Send progress update for a running job (step_results, partial log).
+     * Non-critical — failures are silently ignored.
+     */
+    async updateProgress(
+        jobId: string,
+        stepResults: Array<Record<string, unknown>>,
+    ): Promise<void> {
+        try {
+            await fetch(`${this.baseUrl}/jobs/${jobId}/progress`, {
+                method: 'POST',
+                headers: {
+                    ...this.getHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ step_results: stepResults }),
+            });
+        } catch {
+            // Progress updates are best-effort
+        }
+    }
+
     private getHeaders(): Record<string, string> {
         return {
             Authorization: `Bearer ${this.secret}`,

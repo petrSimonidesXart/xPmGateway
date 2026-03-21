@@ -1,0 +1,11 @@
+{
+    "type": "object",
+    "required": ["query"],
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "Název nebo část názvu úkolu k vyhledání"
+        }
+    },
+    "additionalProperties": false
+}

@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "required": ["fields"],
+    "properties": {
+        "fields": {
+            "type": "object",
+            "description": "Pole k úpravě (název klíče = název pole ve formuláři)",
+            "properties": {
+                "name": { "type": "string", "description": "Název úkolu" },
+                "description": { "type": "string", "description": "Popis úkolu" },
+                "assignee": { "type": "string", "description": "Zodpovědná osoba" },
+                "due_date": { "type": "string", "format": "date", "description": "Termín (YYYY-MM-DD)" }
+            }
+        }
+    },
+    "additionalProperties": false
+}

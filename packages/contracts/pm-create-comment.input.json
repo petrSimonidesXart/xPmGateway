@@ -1,0 +1,11 @@
+{
+    "type": "object",
+    "required": ["text"],
+    "properties": {
+        "text": {
+            "type": "string",
+            "description": "Text komentáře"
+        }
+    },
+    "additionalProperties": false
+}

@@ -5,6 +5,7 @@ namespace App\Module\Internal\Presenters;
 
 use App\Model\Facade\JobFacade;
 use App\Model\Facade\McpException;
+use App\Model\Repository\JobRepository;
 use App\Model\Service\ArtifactService;
 use App\Model\Service\WorkerStatusService;
 use Nette\Application\AbortException;
@@ -19,6 +20,7 @@ class JobsPresenter extends Presenter
 {
 	public function __construct(
 		private JobFacade $jobFacade,
+		private JobRepository $jobRepository,
 		private ArtifactService $artifactService,
 		private WorkerStatusService $workerStatusService,
 		private string $internalApiSecret,
@@ -106,6 +108,25 @@ class JobsPresenter extends Presenter
 			$this->getHttpResponse()->setCode(500);
 			$this->sendJson(['error' => $e->getMessage() ?: $e::class]);
 		}
+	}
+
+
+	/**
+	 * POST /api/internal/jobs/{id}/progress
+	 * Worker sends live progress (step_results) for a running job.
+	 */
+	public function actionProgress(string $id): void
+	{
+		$body = Json::decode(file_get_contents('php://input'), forceArrays: true);
+		$stepResults = $body['step_results'] ?? null;
+
+		if ($stepResults !== null) {
+			$this->jobRepository->getTable()
+				->where('id', $id)
+				->update(['step_results' => Json::encode($stepResults)]);
+		}
+
+		$this->sendJson(['ok' => true]);
 	}
 
 

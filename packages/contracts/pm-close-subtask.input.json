@@ -1,0 +1,11 @@
+{
+    "type": "object",
+    "required": ["path_info"],
+    "properties": {
+        "path_info": {
+            "type": "string",
+            "description": "Cesta k podúkolu (např. projects/xxx/tasks/1/subtasks/123)"
+        }
+    },
+    "additionalProperties": false
+}

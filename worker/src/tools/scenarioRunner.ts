@@ -56,6 +56,9 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 		},
 		api,
 		screenshots,
+		log: (message: string) => {
+			console.log(`[Scenario] ${scenarioDef.name}: ${message}`);
+		},
 	};
 
 	// Context bag: stores input + step outputs

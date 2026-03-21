@@ -1,0 +1,19 @@
+{
+    "type": "object",
+    "required": ["path_info", "fields"],
+    "properties": {
+        "path_info": {
+            "type": "string",
+            "description": "Cesta k podúkolu (např. projects/xxx/tasks/1/subtasks/123)"
+        },
+        "fields": {
+            "type": "object",
+            "description": "Pole k úpravě",
+            "properties": {
+                "name": { "type": "string", "description": "Název podúkolu" },
+                "assignee": { "type": "string", "description": "Zodpovědná osoba" }
+            }
+        }
+    },
+    "additionalProperties": false
+}

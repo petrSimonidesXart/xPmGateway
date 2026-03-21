@@ -14,6 +14,8 @@ export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown
 		return { success: false, error: 'Missing required parameter: query' };
 	}
 
+	ctx.log(`Hledám úkol "${query}"...`);
+
 	// Click "Úkoly" in project submenu
 	await ctx.page.getByRole('link', { name: 'Úkoly', exact: true }).click();
 	await ctx.page.waitForLoadState('networkidle');

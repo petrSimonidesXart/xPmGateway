@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "Hledaný text v podúkolech (prázdné = všechny)"
+        }
+    },
+    "additionalProperties": false
+}

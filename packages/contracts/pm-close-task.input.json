@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "keep_subtasks": {
+            "type": "boolean",
+            "description": "Ponechat podúkoly otevřené (true = Dokončit bez zavření podúkolů)"
+        }
+    },
+    "additionalProperties": false
+}

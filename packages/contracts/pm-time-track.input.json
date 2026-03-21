@@ -1,0 +1,20 @@
+{
+    "type": "object",
+    "required": ["hours", "date"],
+    "properties": {
+        "hours": {
+            "type": "number",
+            "description": "Počet hodin k vykázání"
+        },
+        "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Datum vykázání (YYYY-MM-DD)"
+        },
+        "note": {
+            "type": "string",
+            "description": "Poznámka k výkazu (volitelné)"
+        }
+    },
+    "additionalProperties": false
+}

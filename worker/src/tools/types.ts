@@ -13,6 +13,8 @@ export interface ToolContext {
 	};
 	api: AdapterApi;
 	screenshots: ScreenshotManager;
+	/** Log a progress message (visible in job detail + worker stdout). */
+	log: (message: string) => void;
 }
 
 /** Standard output returned by every tool. */

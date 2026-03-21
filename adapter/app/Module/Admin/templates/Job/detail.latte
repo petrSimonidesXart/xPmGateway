@@ -106,6 +106,57 @@
             </div>
         </div>
     </div>
+    {if $job->step_results}
+    {var $stepResults = json_decode($job->step_results, true)}
+    {if $stepResults}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-list-check me-1"></i>Průběh</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-sm">
+                    <thead>
+                        <tr>
+                            <th class="w-1">#</th>
+                            <th>Zpráva</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $stepResults as $i => $step}
+                        <tr>
+                            <td class="text-secondary">{$i + 1}</td>
+                            <td>
+                                {if isset($step['output']['message'])}
+                                    {$step['output']['message']}
+                                {elseif isset($step['tool'])}
+                                    <code>{$step['tool']}</code>
+                                    {if isset($step['error'])}
+                                        <span class="text-danger ms-2">{$step['error']}</span>
+                                    {/if}
+                                {else}
+                                    {$step['id']}
+                                {/if}
+                            </td>
+                            <td>
+                                {if ($step['status'] ?? '') === 'success'}
+                                    <span class="badge badge-success">OK</span>
+                                {elseif ($step['status'] ?? '') === 'failed'}
+                                    <span class="badge badge-failed">Chyba</span>
+                                {else}
+                                    <span class="badge bg-secondary">{$step['status'] ?? '?'}</span>
+                                {/if}
+                            </td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {/if}
+    {/if}
     {if $job->result}
     <div class="col-12">
         <div class="card">

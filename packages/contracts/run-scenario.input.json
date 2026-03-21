@@ -1,0 +1,15 @@
+{
+    "type": "object",
+    "required": ["scenario"],
+    "properties": {
+        "scenario": {
+            "type": "object",
+            "description": "Definice scénáře (name, steps, input_schema)"
+        },
+        "input": {
+            "type": "object",
+            "description": "Vstupní data pro scénář"
+        }
+    },
+    "additionalProperties": false
+}

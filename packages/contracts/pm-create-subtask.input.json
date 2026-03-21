@@ -1,0 +1,20 @@
+{
+    "type": "object",
+    "required": ["name"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Název podúkolu"
+        },
+        "assignee": {
+            "type": "string",
+            "description": "Zodpovědná osoba (volitelné)"
+        },
+        "due_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Termín podúkolu (YYYY-MM-DD, volitelné)"
+        }
+    },
+    "additionalProperties": false
+}

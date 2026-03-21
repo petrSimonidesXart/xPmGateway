@@ -24,6 +24,7 @@ class RouterFactory
         // Internal API for worker
         $router->addRoute('api/internal/jobs/next', 'Internal:Jobs:next');
         $router->addRoute('api/internal/jobs/<id>/artifacts', 'Internal:Jobs:artifacts');
+        $router->addRoute('api/internal/jobs/<id>/progress', 'Internal:Jobs:progress');
         $router->addRoute('api/internal/jobs/<id>/result', 'Internal:Jobs:result');
 
         // Admin module
