@@ -1,7 +1,6 @@
 import { chromium } from 'playwright';
 import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
-import { ScreenshotManager } from '../lib/screenshots.js';
 import { VideoRecorder } from '../lib/video.js';
 import { toolRegistry } from './registry.js';
 import { resolveTemplates, evaluateCondition } from './templateParser.js';
@@ -33,9 +32,6 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 		return;
 	}
 
-	const screenshots = new ScreenshotManager(job.id);
-	await screenshots.init();
-
 	const recorder = new VideoRecorder(job.id);
 	await recorder.init();
 
@@ -55,7 +51,6 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 			timeout_seconds: job.timeout_seconds,
 		},
 		api,
-		screenshots,
 		log: (message: string) => {
 			console.log(`[Scenario] ${scenarioDef.name}: ${message}`);
 		},
@@ -80,11 +75,9 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 				scenario: scenarioDef.name,
 				steps_executed: stepResults.length,
 				step_results: stepResults,
-				// Collect all outputs from tool steps into a summary
 				output: collectOutputs(stepResults),
 			},
 			error: allSuccess ? undefined : findFirstError(stepResults),
-			screenshots: screenshots.getScreenshots(),
 		});
 
 		console.log(
@@ -92,14 +85,12 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 			+ ` — ${stepResults.length} steps`,
 		);
 	} catch (error) {
-		try { await screenshots.capture(page, 'scenario-error'); } catch { /* ignore */ }
 		const message = error instanceof Error ? error.message : String(error);
 
 		await api.submitResult(job.id, {
 			status: 'failed',
 			error: `Scenario failed at step ${totalSteps}: ${message}`,
 			result: { step_results: stepResults },
-			screenshots: screenshots.getScreenshots(),
 		});
 		throw error;
 	} finally {
@@ -177,14 +168,6 @@ async function executeToolStep(
 		const output = await toolFn(ctx, resolvedInput);
 		const durationMs = Date.now() - startTime;
 
-		// Capture screenshot after step
-		let screenshot: string | undefined;
-		try {
-			await ctx.screenshots.capture(ctx.page, `step-${step.id}`);
-			const shots = ctx.screenshots.getScreenshots();
-			screenshot = shots[shots.length - 1]?.file;
-		} catch { /* ignore screenshot errors */ }
-
 		// Store output in context bag
 		bag[step.id] = { output };
 
@@ -208,7 +191,7 @@ async function executeToolStep(
 					output,
 					error: error + detail,
 					duration_ms: durationMs,
-					screenshot,
+	
 				});
 				throw new Error(error + detail);
 			}
@@ -222,7 +205,7 @@ async function executeToolStep(
 				output,
 				error: (output.error as string) ?? 'Tool returned success=false',
 				duration_ms: durationMs,
-				screenshot,
+
 			});
 			throw new Error(`Step ${step.id} (${step.tool}) failed: ${output.error ?? 'unknown error'}`);
 		}
@@ -233,7 +216,6 @@ async function executeToolStep(
 			status: 'success',
 			output,
 			duration_ms: durationMs,
-			screenshot,
 		});
 	} catch (error) {
 		if (stepResults[stepResults.length - 1]?.id === step.id) {

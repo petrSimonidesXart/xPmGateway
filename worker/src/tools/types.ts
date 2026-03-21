@@ -1,6 +1,5 @@
 import type { Page } from 'playwright';
 import type { AdapterApi } from '../lib/api.js';
-import type { ScreenshotManager } from '../lib/screenshots.js';
 
 /** Shared context passed to every tool during execution. */
 export interface ToolContext {
@@ -12,7 +11,6 @@ export interface ToolContext {
 		timeout_seconds: number;
 	};
 	api: AdapterApi;
-	screenshots: ScreenshotManager;
 	/** Log a progress message (visible in job detail + worker stdout). */
 	log: (message: string) => void;
 }
@@ -85,5 +83,4 @@ export interface StepResult {
 	output?: Record<string, unknown>;
 	error?: string;
 	duration_ms: number;
-	screenshot?: string;
 }

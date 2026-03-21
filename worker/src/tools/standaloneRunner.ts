@@ -2,7 +2,6 @@ import { chromium } from 'playwright';
 import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
 import { loginToLegacySystem } from '../lib/auth.js';
-import { ScreenshotManager } from '../lib/screenshots.js';
 import { VideoRecorder } from '../lib/video.js';
 import { toolRegistry } from './registry.js';
 import type { ToolContext } from './types.js';
@@ -29,9 +28,6 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 		return;
 	}
 
-	const screenshots = new ScreenshotManager(job.id);
-	await screenshots.init();
-
 	const recorder = new VideoRecorder(job.id);
 	await recorder.init();
 
@@ -44,16 +40,6 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 
 	// Progress log — sent to adapter DB in real time
 	const progressLog: Array<{ time: string; message: string }> = [];
-	let progressSeq = 0;
-
-	function sendProgress(): void {
-		api.updateProgress(job.id, progressLog.map((entry, i) => ({
-			id: `log-${i}`,
-			status: 'success' as const,
-			output: { message: entry.message },
-			duration_ms: 0,
-		}))).catch(() => {});
-	}
 
 	const ctx: ToolContext = {
 		page,
@@ -64,11 +50,15 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 			timeout_seconds: job.timeout_seconds,
 		},
 		api,
-		screenshots,
 		log: (message: string) => {
 			progressLog.push({ time: new Date().toISOString(), message });
 			console.log(`[Worker] Job ${job.id}: ${message}`);
-			sendProgress();
+			api.updateProgress(job.id, progressLog.map((e, i) => ({
+				id: `log-${i}`,
+				status: 'success' as const,
+				output: { message: e.message },
+				duration_ms: 0,
+			}))).catch(() => {});
 		},
 	};
 
@@ -82,7 +72,6 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 				job.service_account.username,
 				job.service_account.password,
 			);
-			await screenshots.capture(page, 'auto-login-ok');
 			ctx.log('Přihlášení úspěšné');
 		}
 
@@ -98,7 +87,7 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 				input_prompt: (output.input_prompt as string) ?? 'Vyberte z možností',
 				original_payload: job.payload,
 				tool_name: job.tool_name,
-			}, screenshots.getScreenshots());
+			});
 
 			console.log(`[Worker] Job ${job.id} (${job.tool_name}) → awaiting_input`);
 		} else {
@@ -108,11 +97,9 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 				status: output.success ? 'success' : 'failed',
 				result: { ...output, _progress: progressLog },
 				error: output.success ? undefined : (output.error as string | undefined),
-				screenshots: screenshots.getScreenshots(),
 			});
 		}
 	} catch (error) {
-		try { await screenshots.capture(page, 'error'); } catch { /* ignore */ }
 		const message = error instanceof Error ? error.message : String(error);
 		ctx.log(`Chyba: ${message}`);
 
@@ -120,7 +107,6 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 			status: 'failed',
 			error: message,
 			result: { _progress: progressLog },
-			screenshots: screenshots.getScreenshots(),
 		});
 		throw error;
 	} finally {
