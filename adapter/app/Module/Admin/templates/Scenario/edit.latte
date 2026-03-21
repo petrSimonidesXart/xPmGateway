@@ -26,7 +26,22 @@
                         {input input_schema}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="{$form['steps']->htmlId}">Kroky (JSON)</label>
+                        <label class="form-label" for="{$form['steps']->htmlId}">Kroky</label>
+                        <div class="mb-2 d-flex gap-2 align-items-center">
+                            <select id="tool-picker" class="form-select form-select-sm" style="width: auto;">
+                                <option value="">— Přidat krok —</option>
+                                {foreach $availableTools as $tool}
+                                    <option value="{$tool->name}">{$tool->name}</option>
+                                {/foreach}
+                                <optgroup label="Řízení">
+                                    <option value="_condition">podmínka (condition)</option>
+                                    <option value="_loop">cyklus (loop)</option>
+                                </optgroup>
+                            </select>
+                            <button type="button" id="add-step-btn" class="btn btn-sm btn-outline-primary">
+                                <i class="ti ti-plus me-1"></i>Přidat
+                            </button>
+                        </div>
                         {input steps}
                     </div>
                     <div class="mb-3">
@@ -47,5 +62,76 @@
             </div>
         </div>
     </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-tool me-1"></i>Dostupné nástroje</h3>
+            </div>
+            <div class="list-group list-group-flush">
+                {foreach $availableTools as $tool}
+                <div class="list-group-item list-group-item-action py-1 px-3 tool-insert-item" data-tool="{$tool->name}" style="cursor: pointer;">
+                    <code class="small">{$tool->name}</code>
+                    <div class="text-secondary small">{$tool->description}</div>
+                </div>
+                {/foreach}
+            </div>
+        </div>
+    </div>
 </div>
+
+<script n:syntax="off">
+(function() {
+    var stepsField = document.querySelector('[name="steps"]');
+    var picker = document.getElementById('tool-picker');
+    var addBtn = document.getElementById('add-step-btn');
+    var stepCounter = 0;
+
+    var toolTemplates = {
+        'pm_login': { input: {} },
+        'pm_open_project': { input: { query: '{{input.project}}' } },
+        'pm_open_task': { input: { query: '{{input.task}}' } },
+        'pm_read_task': { input: {} },
+        'pm_update_task': { input: { fields: {} } },
+        'pm_close_task': { input: {} },
+        'pm_create_comment': { input: { text: '{{input.text}}' } },
+        'pm_search_comments': { input: { query: '' } },
+        'pm_create_subtask': { input: { name: '{{input.subtask_name}}' } },
+        'pm_search_subtasks': { input: { query: '' } },
+        'pm_close_subtask': { input: { path_info: '' } },
+        'pm_update_subtask': { input: { path_info: '', fields: {} } },
+        'pm_time_track': { input: { hours: 0, date: '' } },
+        'pm_export_csv': { input: { type: 'tasks' } },
+    };
+
+    function getSteps() {
+        try { var p = JSON.parse(stepsField.value); if (Array.isArray(p)) return p; } catch (e) {}
+        return [];
+    }
+    function setSteps(steps) { stepsField.value = JSON.stringify(steps, null, 2); }
+    function makeStepId(toolName) {
+        stepCounter++;
+        var base = toolName.replace('pm_', '');
+        return base + (stepCounter > 1 ? '_' + stepCounter : '');
+    }
+    function addStep(toolName) {
+        var steps = getSteps();
+        if (toolName === '_condition') {
+            steps.push({ id: 'check_' + (++stepCounter), type: 'condition', 'if': '{{step_id.output.count}} == 1', then: [], 'else': [] });
+        } else if (toolName === '_loop') {
+            steps.push({ id: 'loop_' + (++stepCounter), type: 'loop', over: '{{input.items}}', as: 'item', steps: [] });
+        } else {
+            var tmpl = toolTemplates[toolName] || { input: {} };
+            steps.push({ id: makeStepId(toolName), type: 'tool', tool: toolName, input: tmpl.input });
+        }
+        setSteps(steps);
+        stepsField.scrollTop = stepsField.scrollHeight;
+    }
+
+    addBtn.addEventListener('click', function() { var v = picker.value; if (!v) return; addStep(v); picker.value = ''; });
+    document.querySelectorAll('.tool-insert-item').forEach(function(el) {
+        el.addEventListener('click', function() { addStep(el.dataset.tool); });
+    });
+    stepCounter = getSteps().length;
+})();
+</script>
 {/block}

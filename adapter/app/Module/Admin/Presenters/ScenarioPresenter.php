@@ -62,6 +62,11 @@ class ScenarioPresenter extends BasePresenter
 	public function actionCreate(): void
 	{
 		$this->requireAdmin();
+		$this->template->availableTools = $this->toolRepository->getTable()
+			->where('is_active', true)
+			->where('name NOT IN ?', ['get_job_status', 'list_my_recent_jobs', 'run_scenario'])
+			->order('name ASC')
+			->fetchAll();
 	}
 
 
@@ -72,6 +77,12 @@ class ScenarioPresenter extends BasePresenter
 		if (!$scenario) {
 			$this->error('Scénář nenalezen');
 		}
+
+		$this->template->availableTools = $this->toolRepository->getTable()
+			->where('is_active', true)
+			->where('name NOT IN ?', ['get_job_status', 'list_my_recent_jobs', 'run_scenario'])
+			->order('name ASC')
+			->fetchAll();
 
 		$this['scenarioForm']->setDefaults([
 			'name' => $scenario->name,
