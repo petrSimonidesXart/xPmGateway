@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Module\Admin\Presenters;
 
+use App\Model\Repository\ClientRepository;
 use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Service\EncryptionService;
 use Nette\Application\UI\Form;
@@ -11,6 +12,7 @@ class ServiceAccountPresenter extends BasePresenter
 {
 	public function __construct(
 		private ServiceAccountRepository $serviceAccountRepository,
+		private ClientRepository $clientRepository,
 		private EncryptionService $encryptionService,
 	) {
 		parent::__construct();
@@ -49,7 +51,7 @@ class ServiceAccountPresenter extends BasePresenter
 
 	protected function createComponentAccountForm(): Form
 	{
-		$form = new Form();
+		$form = new Form;
 
 		$form->addText('name', 'Název:')
 			->setRequired('Zadejte název.');
@@ -100,6 +102,32 @@ class ServiceAccountPresenter extends BasePresenter
 			$this->flashMessage('Service account vytvořen.');
 		}
 
+		$this->redirect('default');
+	}
+
+
+	public function handleDelete(int $id): void
+	{
+		$this->requireAdmin();
+
+		$account = $this->serviceAccountRepository->findById($id);
+		if (!$account) {
+			$this->error('Service account not found');
+		}
+
+		// Check if any client uses this service account
+		$clientCount = $this->clientRepository->getTable()
+			->where('service_account_id', $id)
+			->count('*');
+
+		if ($clientCount > 0) {
+			$this->flashMessage('Nelze smazat — tento service account používá ' . $clientCount . ' klient(ů).', 'warning');
+			$this->redirect('this');
+		}
+
+		$this->serviceAccountRepository->getTable()->where('id', $id)->delete();
+		$this->auditService->logAdminAction('service_account_deleted', 'success', ['id' => $id, 'name' => $account->name]);
+		$this->flashMessage('Service account smazán.');
 		$this->redirect('default');
 	}
 }

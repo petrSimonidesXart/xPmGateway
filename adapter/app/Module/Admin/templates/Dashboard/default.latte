@@ -1,75 +1,132 @@
 {block title}Dashboard{/block}
 
 {block content}
-<h2>Dashboard</h2>
-
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-bg-warning">
+<div class="row row-deck row-cards">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm">
             <div class="card-body">
-                <h5 class="card-title">{$pendingJobs}</h5>
-                <p class="card-text">Pending jobů</p>
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-yellow text-white avatar">
+                            <i class="ti ti-clock-pause"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold fs-3">{$pendingJobs}</div>
+                        <div class="text-secondary">Pending jobů</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-bg-danger">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm">
             <div class="card-body">
-                <h5 class="card-title">{$failedJobs}</h5>
-                <p class="card-text">Selhané (24h)</p>
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-red text-white avatar">
+                            <i class="ti ti-alert-triangle"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold fs-3">{$failedJobs}</div>
+                        <div class="text-secondary">Selhané (24h)</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-bg-info">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm">
             <div class="card-body">
-                <h5 class="card-title">{$totalJobsToday}</h5>
-                <p class="card-text">Jobů dnes</p>
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-azure text-white avatar">
+                            <i class="ti ti-activity"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold fs-3">{$totalJobsToday}</div>
+                        <div class="text-secondary">Jobů dnes</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-bg-success">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm">
             <div class="card-body">
-                <h5 class="card-title">{$activeClients}</h5>
-                <p class="card-text">Aktivních klientů</p>
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-green text-white avatar">
+                            <i class="ti ti-users"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold fs-3">{$activeClients}</div>
+                        <div class="text-secondary">Aktivních klientů</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6">
-        <h4>Poslední joby</h4>
-        <table class="table table-sm">
-            <thead><tr><th>ID</th><th>Tool</th><th>Status</th><th>Vytvořen</th></tr></thead>
-            <tbody>
-            {foreach $recentJobs as $job}
-                <tr>
-                    <td><a href="{plink :Admin:Job:detail $job->id}">{$job->id|truncate:8}</a></td>
-                    <td>{$job->ref('tools', 'tool_id')?->name}</td>
-                    <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
-                    <td>{$job->created_at|date:'d.m.Y H:i'}</td>
-                </tr>
-            {/foreach}
-            </tbody>
-        </table>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Poslední joby</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tool</th>
+                            <th>Status</th>
+                            <th>Vytvořen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $recentJobs as $job}
+                        <tr>
+                            <td><a href="{plink :Admin:Job:detail $job->id}">{$job->id|truncate:8}</a></td>
+                            <td>{$job->ref('tools', 'tool_id')?->name}</td>
+                            <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
+                            <td class="text-secondary">{$job->created_at|date:'d.m.Y H:i'}</td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="col-md-6">
-        <h4>Poslední aktivita</h4>
-        <table class="table table-sm">
-            <thead><tr><th>Akce</th><th>Klient</th><th>Status</th><th>Čas</th></tr></thead>
-            <tbody>
-            {foreach $recentActivity as $log}
-                <tr>
-                    <td>{$log->action}</td>
-                    <td>{$log->client_name}</td>
-                    <td>{$log->result_status}</td>
-                    <td>{$log->created_at|date:'d.m.Y H:i'}</td>
-                </tr>
-            {/foreach}
-            </tbody>
-        </table>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Poslední aktivita</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table">
+                    <thead>
+                        <tr>
+                            <th>Akce</th>
+                            <th>Klient</th>
+                            <th>Status</th>
+                            <th>Čas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $recentActivity as $log}
+                        <tr>
+                            <td>{$log->action}</td>
+                            <td>{$log->client_name}</td>
+                            <td>{$log->result_status}</td>
+                            <td class="text-secondary">{$log->created_at|date:'d.m.Y H:i'}</td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {/block}

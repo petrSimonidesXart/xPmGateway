@@ -26,6 +26,6 @@ class AdminUserRepository extends BaseRepository
 	{
 		$this->getTable()
 			->where('id', $id)
-			->update(['last_login_at' => new \DateTime()]);
+			->update(['last_login_at' => new \DateTime]);
 	}
 }

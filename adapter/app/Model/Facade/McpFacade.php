@@ -5,8 +5,8 @@ namespace App\Model\Facade;
 
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\ArtifactService;
-use App\Model\Service\AuthService;
 use App\Model\Service\AuditService;
+use App\Model\Service\AuthService;
 use App\Model\Service\JobService;
 use App\Model\Service\RateLimitService;
 use App\Model\Service\SchemaValidator;

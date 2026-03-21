@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace App\Module\Admin\Presenters;
 
-use App\Model\Repository\ClientRepository;
 use App\Model\Repository\ClientPermissionRepository;
+use App\Model\Repository\ClientRepository;
 use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Repository\ToolRepository;
 use Nette\Application\UI\Form;
@@ -71,7 +71,7 @@ class ClientPresenter extends BasePresenter
 
 	protected function createComponentClientForm(): Form
 	{
-		$form = new Form();
+		$form = new Form;
 
 		$form->addText('name', 'Název:')
 			->setRequired('Zadejte název klienta.');

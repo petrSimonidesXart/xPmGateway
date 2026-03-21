@@ -9,7 +9,7 @@ class RouterFactory
 {
     public static function createRouter(): RouteList
     {
-        $router = new RouteList();
+        $router = new RouteList;
 
         // MCP endpoint
         $router->addRoute('mcp', 'Mcp:Mcp:default');

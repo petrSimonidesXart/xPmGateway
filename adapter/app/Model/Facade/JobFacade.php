@@ -6,7 +6,6 @@ namespace App\Model\Facade;
 use App\Model\Service\AlertService;
 use App\Model\Service\EncryptionService;
 use App\Model\Service\JobService;
-use Nette\Database\Table\ActiveRow;
 
 class JobFacade
 {
@@ -23,16 +22,18 @@ class JobFacade
 	 */
 	public function getNextJobForWorker(): ?array
 	{
-		$job = $this->jobService->getNextPendingJob();
-		if (!$job) {
+		$pendingJob = $this->jobService->getNextPendingJob();
+		if (!$pendingJob) {
 			return null;
 		}
 
 		// Atomically mark as processing
-		if (!$this->jobService->markProcessing($job->id)) {
+		if (!$this->jobService->markProcessing($pendingJob->id)) {
 			return null; // Another worker grabbed it
 		}
 
+		// Re-fetch with a clean query (the original ActiveRow is bound to WHERE status='pending')
+		$job = $this->jobService->findById($pendingJob->id);
 		$serviceAccount = $job->ref('service_accounts', 'service_account_id');
 
 		return [
@@ -52,7 +53,13 @@ class JobFacade
 	/**
 	 * Process job result from worker.
 	 */
-	public function handleJobResult(string $jobId, string $status, ?array $result = null, ?string $error = null, ?array $screenshots = null): void
+	public function handleJobResult(
+		string $jobId,
+		string $status,
+		?array $result = null,
+		?string $error = null,
+		?array $screenshots = null,
+	): void
 	{
 		$job = $this->jobService->findById($jobId);
 		if (!$job) {

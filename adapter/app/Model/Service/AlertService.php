@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace App\Model\Service;
 
-use Nette\Mail\Message;
 use Nette\Mail\Mailer;
+use Nette\Mail\Message;
+use Tracy\Debugger;
+use Tracy\ILogger;
 
 class AlertService
 {
@@ -21,7 +23,7 @@ class AlertService
 			return;
 		}
 
-		$mail = new Message();
+		$mail = new Message;
 		$mail->setFrom('pm-gateway@pm-gateway.local', 'PM Gateway')
 			->addTo($this->alertEmail)
 			->setSubject("PM Gateway: Job failed [{$job->id}]")
@@ -36,7 +38,45 @@ class AlertService
 		try {
 			$this->mailer->send($mail);
 		} catch (\Throwable $e) {
-			\Tracy\Debugger::log($e, \Tracy\ILogger::WARNING);
+			Debugger::log($e, ILogger::WARNING);
+		}
+	}
+
+
+	/**
+	 * Send alert when the worker process is offline.
+	 * Rate-limited to at most one email per 10 minutes via a lock file.
+	 */
+	public function sendWorkerOfflineAlert(?string $lastSeenAt): void
+	{
+		if ($this->alertEmail === '') {
+			return;
+		}
+
+		// Rate limit: don't spam — send at most once per 10 minutes
+		$lockFile = sys_get_temp_dir() . '/pmg-worker-offline-alert.lock';
+		if (is_file($lockFile) && filemtime($lockFile) > time() - 600) {
+			return;
+		}
+		touch($lockFile);
+
+		$lastSeen = $lastSeenAt ?? 'nikdy';
+
+		$mail = new Message;
+		$mail->setFrom('pm-gateway@pm-gateway.local', 'PM Gateway')
+			->addTo($this->alertEmail)
+			->setSubject('PM Gateway: Worker OFFLINE')
+			->setBody(implode("\n", [
+				'Worker proces neodpovídá.',
+				"Naposledy viděn: {$lastSeen}",
+				'',
+				'Zkontrolujte stav workeru a případně ho restartujte.',
+			]));
+
+		try {
+			$this->mailer->send($mail);
+		} catch (\Throwable $e) {
+			Debugger::log($e, ILogger::WARNING);
 		}
 	}
 }

@@ -17,7 +17,7 @@ class RateLimitRepository extends BaseRepository
 	 */
 	public function incrementAndGet(string $key, int $windowSeconds): int
 	{
-		$now = new \DateTime();
+		$now = new \DateTime;
 		$windowStart = new \DateTime("-{$windowSeconds} seconds");
 
 		$row = $this->getTable()

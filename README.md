@@ -55,8 +55,48 @@ xPmGateway/
 ├── worker/           Node.js/Playwright - UI automation worker
 ├── packages/
 │   └── contracts/    Shared JSON Schema contracts
+├── tests/
+│   └── e2e-rest.sh      E2E REST API test script
 └── docs/
-    └── specification.md
+    ├── specification.md  System specification (CZ)
+    ├── api.md            REST API reference
+    ├── worker-handler-guide.md  How to write a new handler
+    └── contracts.md      JSON Schema conventions
+```
+
+## Documentation
+
+- **[REST API](docs/api.md)** — autentizace, endpointy, rate limiting, příklady curl
+- **[Worker Handler Guide](docs/worker-handler-guide.md)** — jak napsat nový Playwright handler
+- **[Contracts](docs/contracts.md)** — JSON Schema konvence a pravidla
+- **[Specification](docs/specification.md)** — kompletní specifikace systému
+
+## Quality & Testing
+
+### Adapter (PHP)
+
+```bash
+cd adapter
+composer check              # vše najednou (testy + PHPStan + PHPCS)
+composer test               # unit testy (Nette Tester)
+composer phpstan            # statická analýza
+composer cs-check           # coding standard check
+composer cs-fix             # auto-oprava coding standard
+```
+
+### Worker (Node.js)
+
+```bash
+cd worker
+npm run check               # vše najednou (TypeScript + ESLint)
+npm test                    # unit testy (Vitest)
+npm run lint                # ESLint
+```
+
+### E2E testy
+
+```bash
+E2E_API_URL=https://gateway.example.com E2E_API_TOKEN=your-token ./tests/e2e-rest.sh
 ```
 
 ## MCP Tools (MVP)

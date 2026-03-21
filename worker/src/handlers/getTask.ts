@@ -3,6 +3,7 @@ import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
 import { loginToLegacySystem } from '../lib/auth.js';
 import { ScreenshotManager } from '../lib/screenshots.js';
+import { VideoRecorder } from '../lib/video.js';
 
 const LEGACY_PM_BASE_URL = process.env.LEGACY_PM_BASE_URL || 'https://hirola.xart.cz/pmdev/public/index.php';
 
@@ -15,8 +16,13 @@ export async function handleGetTask(job: Job, api: AdapterApi): Promise<void> {
     const screenshots = new ScreenshotManager(job.id);
     await screenshots.init();
 
+    const recorder = new VideoRecorder(job.id);
+    await recorder.init();
+
     const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+        ...recorder.contextOptions(),
+    });
     const page = await context.newPage();
 
     page.setDefaultTimeout(job.timeout_seconds * 1000);
@@ -48,8 +54,6 @@ export async function handleGetTask(job: Job, api: AdapterApi): Promise<void> {
 
         // Step 4: Check if we got redirected to a task detail or got an error
         const currentUrl = page.url();
-        const pageContent = await page.textContent('body') ?? '';
-
         // Detect error state
         const hasError = await page.locator('.error, .alert-danger, .flash-error, .message-error').count() > 0;
         const isStillOnForm = currentUrl.includes('direct_task');
@@ -131,7 +135,10 @@ export async function handleGetTask(job: Job, api: AdapterApi): Promise<void> {
         });
         throw error;
     } finally {
+        const video = page.video();
         await context.close();
+        await recorder.upload(video, api);
         await browser.close();
+        await recorder.cleanup();
     }
 }

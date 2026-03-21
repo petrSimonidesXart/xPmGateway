@@ -24,7 +24,12 @@ class ArtifactService
 	/**
 	 * Store an uploaded artifact file and create a DB record.
 	 */
-	public function storeFromUpload(string $jobId, FileUpload $file, ?string $mimeType = null, ?array $metadata = null): ActiveRow
+	public function storeFromUpload(
+		string $jobId,
+		FileUpload $file,
+		?string $mimeType = null,
+		?array $metadata = null,
+	): ActiveRow
 	{
 		if (!$file->isOk()) {
 			throw new \RuntimeException('File upload failed: ' . $file->getError());
@@ -58,7 +63,13 @@ class ArtifactService
 	/**
 	 * Store an artifact from raw content (for inline data from worker JSON).
 	 */
-	public function storeFromContent(string $jobId, string $content, string $filename, string $mimeType, ?array $metadata = null): ActiveRow
+	public function storeFromContent(
+		string $jobId,
+		string $content,
+		string $filename,
+		string $mimeType,
+		?array $metadata = null,
+	): ActiveRow
 	{
 		$artifactDir = $this->storageDir . '/' . $jobId;
 		FileSystem::createDir($artifactDir);

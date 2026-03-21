@@ -52,7 +52,7 @@ class UserPresenter extends BasePresenter
 
 	protected function createComponentUserForm(): Form
 	{
-		$form = new Form();
+		$form = new Form;
 
 		$form->addText('username', 'Uživatelské jméno:')
 			->setRequired('Zadejte uživatelské jméno.');

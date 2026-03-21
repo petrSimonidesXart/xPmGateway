@@ -6,16 +6,23 @@
     "scripts": {
         "build": "tsc",
         "start": "node dist/index.js",
-        "dev": "tsx src/index.ts"
+        "dev": "tsx src/index.ts",
+        "test": "vitest run",
+        "lint": "eslint src/",
+        "check": "tsc --noEmit && eslint src/"
     },
     "dependencies": {
-        "playwright": "^1.42.0",
         "ajv": "^8.12.0",
-        "dotenv": "^16.4.0"
+        "dotenv": "^16.4.0",
+        "playwright": "^1.42.0"
     },
     "devDependencies": {
-        "typescript": "^5.4.0",
+        "@eslint/js": "^10.0.1",
+        "@types/node": "^20.11.0",
+        "eslint": "^10.0.3",
         "tsx": "^4.7.0",
-        "@types/node": "^20.11.0"
+        "typescript": "^5.4.0",
+        "typescript-eslint": "^8.57.1",
+        "vitest": "^4.1.0"
     }
 }

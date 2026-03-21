@@ -1,23 +1,44 @@
 {block title}Admin Uživatelé{/block}
 
-{block content}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Admin Uživatelé</h2>
-    <a href="{plink create}" class="btn btn-primary">Nový uživatel</a>
-</div>
+{block actions}
+<a href="{plink create}" class="btn btn-primary">
+    <i class="ti ti-plus me-1"></i>Nový uživatel
+</a>
+{/block}
 
-<table class="table">
-    <thead><tr><th>Username</th><th>Role</th><th>Aktivní</th><th>Poslední login</th><th></th></tr></thead>
-    <tbody>
-    {foreach $users as $adminUser}
-        <tr>
-            <td>{$adminUser->username}</td>
-            <td><span class="badge bg-{$adminUser->role === 'admin' ? 'primary' : 'secondary'}">{$adminUser->role}</span></td>
-            <td>{if $adminUser->is_active}<span class="badge bg-success">Ano</span>{else}<span class="badge bg-secondary">Ne</span>{/if}</td>
-            <td>{if $adminUser->last_login_at}{$adminUser->last_login_at|date:'d.m.Y H:i'}{else}—{/if}</td>
-            <td><a href="{plink edit $adminUser->id}" class="btn btn-sm btn-outline-primary">Upravit</a></td>
-        </tr>
-    {/foreach}
-    </tbody>
-</table>
+{block content}
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Aktivní</th>
+                    <th>Poslední login</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach $users as $adminUser}
+                <tr>
+                    <td>{$adminUser->username}</td>
+                    <td><span class="badge bg-{$adminUser->role === 'admin' ? 'blue' : 'secondary'}">{$adminUser->role}</span></td>
+                    <td>
+                        {if $adminUser->is_active}
+                            <span class="badge bg-green">Ano</span>
+                        {else}
+                            <span class="badge bg-secondary">Ne</span>
+                        {/if}
+                    </td>
+                    <td class="text-secondary">{if $adminUser->last_login_at}{$adminUser->last_login_at|date:'d.m.Y H:i'}{else}—{/if}</td>
+                    <td>
+                        <a href="{plink edit $adminUser->id}" class="btn btn-sm">Upravit</a>
+                    </td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+    </div>
+</div>
 {/block}

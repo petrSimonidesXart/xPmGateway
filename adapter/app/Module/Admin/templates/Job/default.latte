@@ -1,52 +1,80 @@
 {block title}Joby{/block}
 
 {block content}
-<h2>Joby</h2>
-
-<form class="row g-2 mb-3" method="get">
-    <div class="col-auto">
-        <select name="status" class="form-select form-select-sm">
-            <option value="">Všechny stavy</option>
-            {foreach ['pending', 'processing', 'success', 'failed', 'timeout'] as $s}
-                <option value="{$s}" {if $filterStatus === $s}selected{/if}>{$s}</option>
+<div class="card">
+    <div class="card-body border-bottom py-3">
+        <form class="row g-2 align-items-center" method="get">
+            <div class="col-auto">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Všechny stavy</option>
+                    {foreach ['pending', 'processing', 'success', 'failed', 'timeout'] as $s}
+                        <option value="{$s}" {if $filterStatus === $s}selected{/if}>{$s}</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="client_id" class="form-select form-select-sm">
+                    <option value="">Všichni klienti</option>
+                    {foreach $clients as $cid => $cname}
+                        <option value="{$cid}" {if $filterClientId == $cid}selected{/if}>{$cname}</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="tool_id" class="form-select form-select-sm">
+                    <option value="">Všechny tooly</option>
+                    {foreach $tools as $tid => $tname}
+                        <option value="{$tid}" {if $filterToolId == $tid}selected{/if}>{$tname}</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="ti ti-filter me-1"></i>Filtrovat
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>Tool</th>
+                    <th>Klient</th>
+                    <th>Status</th>
+                    <th>Pokusů</th>
+                    <th>Vytvořen</th>
+                    <th>Dokončen</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach $jobs as $job}
+                <tr>
+                    <td><a href="{plink detail $job->id}">{$job->id|truncate(12)}</a></td>
+                    <td>{$job->ref('tools', 'tool_id')?->name}</td>
+                    <td>{$job->ref('clients', 'client_id')?->name}</td>
+                    <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
+                    <td class="text-secondary">{$job->attempts}/{$job->max_attempts}</td>
+                    <td class="text-secondary">{$job->created_at|date:'d.m.Y H:i:s'}</td>
+                    <td class="text-secondary">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</td>
+                    <td class="text-nowrap">
+                        {if in_array($job->status, ['pending', 'processing'])}
+                        <a href="{plink cancel $job->id}" class="btn btn-sm btn-outline-danger" title="Zrušit" onclick="return confirm('Zrušit?')">
+                            <i class="ti ti-x"></i>
+                        </a>
+                        {/if}
+                        {if in_array($job->status, ['failed', 'timeout'])}
+                        <a href="{plink retry $job->id}" class="btn btn-sm btn-outline-warning" title="Opakovat job">
+                            <i class="ti ti-refresh"></i>
+                        </a>
+                        {/if}
+                    </td>
+                </tr>
             {/foreach}
-        </select>
+            </tbody>
+        </table>
     </div>
-    <div class="col-auto">
-        <select name="client_id" class="form-select form-select-sm">
-            <option value="">Všichni klienti</option>
-            {foreach $clients as $cid => $cname}
-                <option value="{$cid}" {if $filterClientId == $cid}selected{/if}>{$cname}</option>
-            {/foreach}
-        </select>
-    </div>
-    <div class="col-auto">
-        <select name="tool_id" class="form-select form-select-sm">
-            <option value="">Všechny tooly</option>
-            {foreach $tools as $tid => $tname}
-                <option value="{$tid}" {if $filterToolId == $tid}selected{/if}>{$tname}</option>
-            {/foreach}
-        </select>
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-sm btn-primary">Filtrovat</button>
-    </div>
-</form>
-
-<table class="table table-sm">
-    <thead><tr><th>Job ID</th><th>Tool</th><th>Klient</th><th>Status</th><th>Pokusů</th><th>Vytvořen</th><th>Dokončen</th></tr></thead>
-    <tbody>
-    {foreach $jobs as $job}
-        <tr>
-            <td><a href="{plink detail $job->id}">{$job->id|truncate:12}</a></td>
-            <td>{$job->ref('tools', 'tool_id')?->name}</td>
-            <td>{$job->ref('clients', 'client_id')?->name}</td>
-            <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
-            <td>{$job->attempts}/{$job->max_attempts}</td>
-            <td>{$job->created_at|date:'d.m.Y H:i:s'}</td>
-            <td>{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</td>
-        </tr>
-    {/foreach}
-    </tbody>
-</table>
+</div>
 {/block}

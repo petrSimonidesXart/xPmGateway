@@ -7,7 +7,6 @@ use App\Model\Repository\AdminUserRepository;
 use App\Model\Service\AuditService;
 use Nette\Application\UI\Form;
 use Nette\Application\UI\Presenter;
-use Nette\Security\AuthenticationException;
 use Nette\Security\SimpleIdentity;
 
 class SignPresenter extends Presenter
@@ -22,7 +21,7 @@ class SignPresenter extends Presenter
 
 	protected function createComponentSignInForm(): Form
 	{
-		$form = new Form();
+		$form = new Form;
 		$form->addText('username', 'Uživatelské jméno:')
 			->setRequired('Zadejte uživatelské jméno.');
 		$form->addPassword('password', 'Heslo:')

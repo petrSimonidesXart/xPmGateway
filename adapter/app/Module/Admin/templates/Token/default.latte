@@ -1,46 +1,64 @@
 {block title}Tokeny: {$client->name}{/block}
 
-{block content}
-<h2>API Tokeny — {$client->name}</h2>
+{block actions}
+<a href="{plink :Admin:Client:detail $client->id}" class="btn btn-outline-secondary">
+    <i class="ti ti-arrow-left me-1"></i>Zpět na klienta
+</a>
+{/block}
 
+{block content}
 {if $isAdmin}
-    <div class="card mb-4">
-        <div class="card-header">Vygenerovat nový token</div>
-        <div class="card-body">
-            {control generateTokenForm}
-        </div>
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">Vygenerovat nový token</h3>
     </div>
+    <div class="card-body">
+        {control generateTokenForm}
+    </div>
+</div>
 {/if}
 
-<table class="table">
-    <thead><tr><th>Prefix</th><th>Label</th><th>Vytvořen</th><th>Naposledy použit</th><th>Expirace</th><th>Status</th><th></th></tr></thead>
-    <tbody>
-    {foreach $tokens as $token}
-        <tr class="{if $token->revoked_at}table-secondary{/if}">
-            <td><code>{$token->token_prefix}...</code></td>
-            <td>{$token->label ?? '—'}</td>
-            <td>{$token->created_at|date:'d.m.Y H:i'}</td>
-            <td>{if $token->last_used_at}{$token->last_used_at|date:'d.m.Y H:i'}{else}—{/if}</td>
-            <td>{if $token->expires_at}{$token->expires_at|date:'d.m.Y'}{else}Neexpiruje{/if}</td>
-            <td>
-                {if $token->revoked_at}
-                    <span class="badge bg-danger">Revokován</span>
-                {elseif $token->expires_at && $token->expires_at < new DateTime()}
-                    <span class="badge bg-warning">Expirován</span>
-                {else}
-                    <span class="badge bg-success">Aktivní</span>
-                {/if}
-            </td>
-            <td>
-                {if $isAdmin && !$token->revoked_at}
-                    <a href="{plink revoke! tokenId => $token->id}" class="btn btn-sm btn-outline-danger"
-                       onclick="return confirm('Opravdu revokovat token?')">Revokovat</a>
-                {/if}
-            </td>
-        </tr>
-    {/foreach}
-    </tbody>
-</table>
-
-<a href="{plink :Admin:Client:detail $client->id}" class="btn btn-outline-secondary">Zpět na klienta</a>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+            <thead>
+                <tr>
+                    <th>Prefix</th>
+                    <th>Label</th>
+                    <th>Vytvořen</th>
+                    <th>Naposledy použit</th>
+                    <th>Expirace</th>
+                    <th>Status</th>
+                    <th class="w-1"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach $tokens as $token}
+                <tr n:class="$token->revoked_at ? text-secondary">
+                    <td><code>{$token->token_prefix}...</code></td>
+                    <td>{$token->label ?? '—'}</td>
+                    <td>{$token->created_at|date:'d.m.Y H:i'}</td>
+                    <td>{if $token->last_used_at}{$token->last_used_at|date:'d.m.Y H:i'}{else}—{/if}</td>
+                    <td>{if $token->expires_at}{$token->expires_at|date:'d.m.Y'}{else}Neexpiruje{/if}</td>
+                    <td>
+                        {if $token->revoked_at}
+                            <span class="badge bg-red">Revokován</span>
+                        {elseif $token->expires_at && $token->expires_at < new DateTime()}
+                            <span class="badge bg-yellow">Expirován</span>
+                        {else}
+                            <span class="badge bg-green">Aktivní</span>
+                        {/if}
+                    </td>
+                    <td>
+                        {if $isAdmin && !$token->revoked_at}
+                            <a href="{plink revoke! tokenId => $token->id}" class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Opravdu revokovat token?')">Revokovat</a>
+                        {/if}
+                    </td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+    </div>
+</div>
 {/block}

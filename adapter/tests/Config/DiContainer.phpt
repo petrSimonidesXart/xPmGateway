@@ -7,34 +7,34 @@ declare(strict_types=1);
  */
 
 use Tester\Assert;
+use Tester\Environment;
 
 require __DIR__ . '/../bootstrap.php';
 
 
-test('DI container compiles without errors', function () {
-	$configurator = new Nette\Bootstrap\Configurator();
-
-	$configurator->setDebugMode(true);
-	$configurator->setTempDirectory(__DIR__ . '/../../storage/temp');
-	$configurator->enableTracy(__DIR__ . '/../../storage/log');
-
-	// Load .env
-	$envFile = __DIR__ . '/../../.env';
-	if (is_file($envFile)) {
-		$lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-		foreach ($lines as $line) {
-			if (str_starts_with(trim($line), '#')) {
-				continue;
-			}
-			if (str_contains($line, '=')) {
-				[$key, $value] = explode('=', $line, 2);
-				$_ENV[trim($key)] = trim($value);
-			}
+// Load .env for all tests in this file
+$envFile = __DIR__ . '/../../.env';
+if (is_file($envFile)) {
+	$lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+	foreach ($lines as $line) {
+		if (str_starts_with(trim($line), '#')) {
+			continue;
+		}
+		if (str_contains($line, '=')) {
+			[$key, $value] = explode('=', $line, 2);
+			$_ENV[trim($key)] = trim($value);
 		}
 	}
+}
+
+
+function createTestContainer(): Nette\DI\Container
+{
+	$configurator = new Nette\Bootstrap\Configurator();
+	$configurator->setDebugMode(true);
+	$configurator->setTempDirectory(__DIR__ . '/../../storage/temp');
 
 	$configurator->addDynamicParameters(['env' => $_ENV]);
-
 	$configurator->addConfig(__DIR__ . '/../../config/common.neon');
 	$configurator->addConfig(__DIR__ . '/../../config/services.neon');
 
@@ -43,11 +43,34 @@ test('DI container compiles without errors', function () {
 		$configurator->addConfig($localConfig);
 	}
 
-	$container = $configurator->createContainer();
+	return $configurator->createContainer();
+}
 
+
+function skipIfNoDatabase(): void
+{
+	$host = $_ENV['DB_HOST'] ?? 'localhost';
+	$port = (int) ($_ENV['DB_PORT'] ?? 3306);
+
+	$conn = @fsockopen($host, $port, $errno, $errstr, 2);
+	if (!$conn) {
+		Environment::skip("Database not available ($host:$port)");
+	}
+	fclose($conn);
+}
+
+
+test('DI container compiles without errors', function () {
+	$container = createTestContainer();
 	Assert::type(Nette\DI\Container::class, $container);
+});
 
-	// Verify key services can be resolved
+
+test('key services can be resolved', function () {
+	skipIfNoDatabase();
+
+	$container = createTestContainer();
+
 	Assert::type(App\Model\Service\AuthService::class, $container->getByType(App\Model\Service\AuthService::class));
 	Assert::type(App\Model\Service\JobService::class, $container->getByType(App\Model\Service\JobService::class));
 	Assert::type(App\Model\Service\EncryptionService::class, $container->getByType(App\Model\Service\EncryptionService::class));
@@ -62,20 +85,9 @@ test('DI container compiles without errors', function () {
 
 
 test('RateLimitService has correct rate limit from config', function () {
-	$configurator = new Nette\Bootstrap\Configurator();
-	$configurator->setDebugMode(true);
-	$configurator->setTempDirectory(__DIR__ . '/../../storage/temp');
+	skipIfNoDatabase();
 
-	$configurator->addDynamicParameters(['env' => $_ENV]);
-	$configurator->addConfig(__DIR__ . '/../../config/common.neon');
-	$configurator->addConfig(__DIR__ . '/../../config/services.neon');
-
-	$localConfig = __DIR__ . '/../../config/local.neon';
-	if (is_file($localConfig)) {
-		$configurator->addConfig($localConfig);
-	}
-
-	$container = $configurator->createContainer();
+	$container = createTestContainer();
 	$service = $container->getByType(App\Model\Service\RateLimitService::class);
 
 	Assert::type(App\Model\Service\RateLimitService::class, $service);
@@ -83,22 +95,10 @@ test('RateLimitService has correct rate limit from config', function () {
 
 
 test('SmtpMailer receives int port', function () {
-	$configurator = new Nette\Bootstrap\Configurator();
-	$configurator->setDebugMode(true);
-	$configurator->setTempDirectory(__DIR__ . '/../../storage/temp');
+	skipIfNoDatabase();
 
 	$_ENV['SMTP_PORT'] = '25';
-	$configurator->addDynamicParameters(['env' => $_ENV]);
-	$configurator->addConfig(__DIR__ . '/../../config/common.neon');
-	$configurator->addConfig(__DIR__ . '/../../config/services.neon');
-
-	$localConfig = __DIR__ . '/../../config/local.neon';
-	if (is_file($localConfig)) {
-		$configurator->addConfig($localConfig);
-	}
-
-	// If this doesn't throw, the port type is correct
-	$container = $configurator->createContainer();
+	$container = createTestContainer();
 	$mailer = $container->getByType(Nette\Mail\Mailer::class);
 	Assert::type(Nette\Mail\SmtpMailer::class, $mailer);
 });

@@ -2,11 +2,12 @@ import { chromium } from 'playwright';
 import { join } from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { readdirSync } from 'node:fs';
+
 import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
 import { loginToLegacySystem } from '../lib/auth.js';
 import { ScreenshotManager } from '../lib/screenshots.js';
+import { VideoRecorder } from '../lib/video.js';
 
 const LEGACY_PM_BASE_URL = process.env.LEGACY_PM_BASE_URL || 'https://hirola.xart.cz/pmdev/public/index.php';
 
@@ -22,9 +23,13 @@ export async function handleExportFilteredTasks(job: Job, api: AdapterApi): Prom
     // Create temp dir for downloaded file
     const downloadDir = await mkdtemp(join(tmpdir(), 'pm-export-'));
 
+    const recorder = new VideoRecorder(job.id);
+    await recorder.init();
+
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({
         acceptDownloads: true,
+        ...recorder.contextOptions(),
     });
     const page = await context.newPage();
 
@@ -135,8 +140,11 @@ export async function handleExportFilteredTasks(job: Job, api: AdapterApi): Prom
         });
         throw error;
     } finally {
+        const video = page.video();
         await context.close();
+        await recorder.upload(video, api);
         await browser.close();
+        await recorder.cleanup();
         // Clean up temp dir
         await rm(downloadDir, { recursive: true, force: true }).catch(() => {});
     }

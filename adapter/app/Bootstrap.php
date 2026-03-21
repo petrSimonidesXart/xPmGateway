@@ -9,7 +9,7 @@ class Bootstrap
 {
     public static function boot(): Configurator
     {
-        $configurator = new Configurator();
+        $configurator = new Configurator;
 
         // Load .env file
         $envFile = __DIR__ . '/../.env';
@@ -31,7 +31,7 @@ class Bootstrap
             php_sapi_name() === 'cli'
             || ($_ENV['APP_DEBUG'] ?? '') === '1'
             || ($_ENV['APP_ENV'] ?? '') === 'development'
-            || in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)
+            || in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true),
         );
         $configurator->enableTracy(__DIR__ . '/../storage/log');
         $configurator->setTempDirectory(__DIR__ . '/../storage/temp');

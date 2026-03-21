@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace App\Model\Repository;
 
 use Nette\Database\Table\ActiveRow;
-use Nette\Database\Table\Selection;
-use Nette\Utils\Random;
 
 class JobRepository extends BaseRepository
 {
@@ -39,7 +37,7 @@ class JobRepository extends BaseRepository
 			->where('status', 'pending')
 			->update([
 				'status' => 'processing',
-				'started_at' => new \DateTime(),
+				'started_at' => new \DateTime,
 				'attempts+=' => 1,
 			]);
 	}
@@ -53,7 +51,7 @@ class JobRepository extends BaseRepository
 				'status' => 'success',
 				'result' => json_encode($result),
 				'screenshots' => $screenshots ? json_encode($screenshots) : null,
-				'finished_at' => new \DateTime(),
+				'finished_at' => new \DateTime,
 			]);
 	}
 
@@ -66,19 +64,23 @@ class JobRepository extends BaseRepository
 				'status' => 'failed',
 				'error_message' => $errorMessage,
 				'screenshots' => $screenshots ? json_encode($screenshots) : null,
-				'finished_at' => new \DateTime(),
+				'finished_at' => new \DateTime,
 			]);
 	}
 
 
-	public function markTimedOut(): int
+	/**
+	 * Mark processing jobs as timed out when started_at + timeout_seconds + grace period has elapsed.
+	 */
+	public function markTimedOut(int $graceSeconds = 120): int
 	{
 		return $this->getTable()
 			->where('status', 'processing')
-			->where('started_at < ?', new \DateTime('-120 seconds'))
+			->where('DATE_ADD(started_at, INTERVAL (timeout_seconds + ?) SECOND) < NOW()', $graceSeconds)
 			->update([
 				'status' => 'timeout',
-				'finished_at' => new \DateTime(),
+				'error_message' => 'Job timed out (no response from worker)',
+				'finished_at' => new \DateTime,
 			]);
 	}
 
@@ -95,7 +97,12 @@ class JobRepository extends BaseRepository
 	}
 
 
-	public function findByClientId(int $clientId, ?string $status = null, ?string $toolName = null, int $limit = 10): array
+	public function findByClientId(
+		int $clientId,
+		?string $status = null,
+		?string $toolName = null,
+		int $limit = 10,
+	): array
 	{
 		$query = $this->getTable()
 			->where('client_id', $clientId)

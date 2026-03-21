@@ -3,6 +3,7 @@ import type { Job } from '../index.js';
 import type { AdapterApi } from '../lib/api.js';
 import { loginToLegacySystem } from '../lib/auth.js';
 import { ScreenshotManager } from '../lib/screenshots.js';
+import { VideoRecorder } from '../lib/video.js';
 
 const LEGACY_PM_BASE_URL = process.env.LEGACY_PM_BASE_URL || 'https://pm.interni-sit.cz';
 
@@ -10,8 +11,13 @@ export async function handleVerifyCredentials(job: Job, api: AdapterApi): Promis
     const screenshots = new ScreenshotManager(job.id);
     await screenshots.init();
 
+    const recorder = new VideoRecorder(job.id);
+    await recorder.init();
+
     const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+        ...recorder.contextOptions(),
+    });
     const page = await context.newPage();
 
     page.setDefaultTimeout(job.timeout_seconds * 1000);
@@ -42,7 +48,10 @@ export async function handleVerifyCredentials(job: Job, api: AdapterApi): Promis
         });
         throw error;
     } finally {
+        const video = page.video();
         await context.close();
+        await recorder.upload(video, api);
         await browser.close();
+        await recorder.cleanup();
     }
 }
