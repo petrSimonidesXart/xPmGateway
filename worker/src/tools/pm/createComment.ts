@@ -27,10 +27,10 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 		return fail('Odkaz "Přidat komentář" nenalezen — jste na stránce úkolu? Máte oprávnění k této akci na daném projektu?');
 	}
 
-	// Wait for the comment form to appear
-	const hiddenTextarea = ctx.page.locator('textarea[name="comment[body]"]');
-	const formReady = await safeWaitFor(ctx, hiddenTextarea, 'Hidden textarea comment[body]', 5000);
-	if (!formReady) {
+	// Wait for the comment form to appear (textarea is hidden, wait for DOM attachment)
+	try {
+		await ctx.page.locator('textarea[name="comment[body]"]').waitFor({ state: 'attached', timeout: 5000 });
+	} catch {
 		return fail('Formulář pro komentář se neotevřel');
 	}
 

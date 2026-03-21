@@ -280,6 +280,38 @@ class JobPresenter extends BasePresenter
 
 
 	/**
+	 * Duplicate a job — same tool, payload, client, account — no chain link.
+	 */
+	public function handleDuplicate(string $id): void
+	{
+		$this->requirePost();
+
+		$job = $this->jobRepository->findById($id);
+		if (!$job) {
+			$this->error('Job not found');
+		}
+
+		$newJob = $this->jobRepository->create([
+			'client_id' => $job->client_id,
+			'service_account_id' => $job->service_account_id,
+			'tool_id' => $job->tool_id,
+			'scenario_id' => $job->scenario_id,
+			'payload' => $job->payload,
+			'status' => 'pending',
+			'timeout_seconds' => $job->timeout_seconds,
+		]);
+
+		$this->auditService->logAdminAction('job_duplicated', 'success', [
+			'original_job_id' => $id,
+			'new_job_id' => $newJob->id,
+		]);
+
+		$this->flashMessage("Úloha duplikována, nový job ID: {$newJob->id}");
+		$this->redirect('detail', $newJob->id);
+	}
+
+
+	/**
 	 * Force-cancel a stuck processing/pending job (POST only).
 	 */
 	public function handleCancel(string $id): void

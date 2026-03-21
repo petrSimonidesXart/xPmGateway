@@ -24,6 +24,14 @@
     </button>
 </form>
 {/if}
+{if !in_array($job->status, ['pending', 'processing'])}
+<form method="post" action="{plink duplicate! id => $job->id}" class="d-inline me-2">
+    <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+    <button type="submit" class="btn btn-outline-secondary">
+        <i class="ti ti-copy me-1"></i>Duplikovat
+    </button>
+</form>
+{/if}
 <a href="{plink default}" class="btn btn-outline-secondary">
     <i class="ti ti-arrow-left me-1"></i>Zpět na seznam
 </a>
