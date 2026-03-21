@@ -115,7 +115,7 @@
         'pm_close_task': { input: {} },
         'pm_create_comment': { input: { text: '{{input.text}}' }, vars: { text: { type: 'string', description: 'Text komentáře' } } },
         'pm_search_comments': { input: { query: '{{input.search_query}}' }, vars: { search_query: { type: 'string', description: 'Hledaný text' } } },
-        'pm_create_subtask': { input: { name: '{{input.subtask_name}}' }, vars: { subtask_name: { type: 'string', description: 'Název podúkolu' } } },
+        'pm_create_subtask': { input: { name: '{{input.subtask_name}}', assignee: '{{input.subtask_assignee}}', label: '{{input.subtask_label}}', schedule: '{{input.subtask_schedule}}', estimate: '{{input.subtask_estimate}}' }, vars: { subtask_name: { type: 'string', description: 'Název podúkolu' }, subtask_assignee: { type: 'string', description: 'Zodpovědná osoba' }, subtask_label: { type: 'string', description: 'Štítek (Řešit, Schůzka, ...)' }, subtask_schedule: { type: 'string', description: 'Plánování: this_week, next_week, after_next_week, nebo YYYY/MM/DD' }, subtask_estimate: { type: 'string', description: 'Časový odhad (1 = hodina, :30 = 30min)' } } },
         'pm_search_subtasks': { input: { query: '{{input.search_query}}' } },
         'pm_close_subtask': { input: { path_info: '' } },
         'pm_update_subtask': { input: { path_info: '', fields: {} } },

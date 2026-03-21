@@ -142,10 +142,29 @@ export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown
 	}
 	await ctx.page.waitForLoadState('networkidle');
 
+	// Verify we landed on the task page
+	const verified = await verifyTaskPage(ctx, results[0].path_info);
+	if (!verified) {
+		return fail('Stránka úkolu se nenačetla po kliknutí');
+	}
+
 	ctx.log(`Úkol "${results[0].name}" otevřen`);
 	return {
 		success: true, found: true,
 		task_id: results[0].task_id, name: results[0].name, path_info: results[0].path_info,
 		count: 1, results,
 	};
+}
+
+/** Verify we're on the task detail page by checking URL contains the expected path_info. */
+async function verifyTaskPage(ctx: ToolContext, expectedPath: string): Promise<boolean> {
+	const url = ctx.page.url();
+	const taskIdMatch = /tasks[/%]2[fF](\d+)|tasks\/(\d+)/.exec(url);
+	if (taskIdMatch) return true;
+
+	// Wait a bit more and retry
+	await ctx.page.waitForTimeout(1000);
+	const url2 = ctx.page.url();
+	const match2 = /tasks[/%]2[fF](\d+)|tasks\/(\d+)/.exec(url2);
+	return !!match2;
 }
