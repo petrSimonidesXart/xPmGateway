@@ -6,12 +6,9 @@ import { safeClick, safeWaitFor, fail } from './helpers.js';
  * Input: { text: string }
  * Output: { success, verified }
  *
- * The comment form uses a Redactor rich-text editor (contenteditable div)
- * with AJAX submit. The actual textarea is hidden, content goes into
- * .redactor_editor[contenteditable="true"].
- *
- * Submit button: .comment_form_main_buttons button[type="submit"]
- * Verification: .comment.loaded appears after AJAX completes
+ * ActiveCollab uses Redactor editor (contenteditable + hidden textarea)
+ * with ajax_submit_enabled. We set the hidden textarea value directly
+ * and submit the form via JS to bypass Redactor sync issues.
  */
 export async function pmCreateComment(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const text = String(input.text ?? '');
@@ -24,29 +21,40 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 	// Click "Přidat komentář"
 	const clicked = await safeClick(
 		ctx, ctx.page.getByRole('link', { name: 'Přidat komentář' }),
-		'Odkaz "Přidat komentář" — jste na stránce úkolu? Máte oprávnění k této akci na daném projektu?',
+		'Odkaz "Přidat komentář"',
 	);
 	if (!clicked) {
 		return fail('Odkaz "Přidat komentář" nenalezen — jste na stránce úkolu? Máte oprávnění k této akci na daném projektu?');
 	}
 
-	// Wait for contenteditable editor to appear
-	const editor = ctx.page.locator('.redactor_editor[contenteditable="true"]');
-	const editorReady = await safeWaitFor(ctx, editor, 'Redactor editor (contenteditable)', 5000);
-	if (!editorReady) {
-		return fail('Editor pro komentář se neotevřel');
+	// Wait for the comment form to appear
+	const hiddenTextarea = ctx.page.locator('textarea[name="comment[body]"]');
+	const formReady = await safeWaitFor(ctx, hiddenTextarea, 'Hidden textarea comment[body]', 5000);
+	if (!formReady) {
+		return fail('Formulář pro komentář se neotevřel');
 	}
 
-	// Clear existing content and type the comment
 	ctx.log(`Vyplňuji komentář (${text.length} znaků)...`);
-	await editor.click();
-	await ctx.page.keyboard.press('Control+A');
-	await ctx.page.keyboard.type(text);
 
-	// Wait for editor to process the input
-	await ctx.page.waitForTimeout(1000);
+	// Set value in both contenteditable div AND hidden textarea via JS
+	// This ensures Redactor's AJAX submit sends the correct content
+	await ctx.page.evaluate((commentText) => {
+		// Set contenteditable div
+		const editor = document.querySelector('.redactor_editor[contenteditable="true"]') as HTMLElement;
+		if (editor) {
+			editor.innerHTML = '<p>' + commentText.replace(/\n/g, '</p><p>') + '</p>';
+		}
 
-	// Click submit button in .comment_form_main_buttons
+		// Set hidden textarea (this is what actually gets submitted)
+		const textarea = document.querySelector('textarea[name="comment[body]"]') as HTMLTextAreaElement;
+		if (textarea) {
+			textarea.value = '<p>' + commentText.replace(/\n/g, '</p><p>') + '</p>';
+		}
+	}, text);
+
+	await ctx.page.waitForTimeout(500);
+
+	// Click submit button
 	ctx.log('Odesílám komentář...');
 	const submitBtn = ctx.page.locator('.comment_form_main_buttons button[type="submit"]');
 	const submitReady = await safeWaitFor(ctx, submitBtn, 'Tlačítko odeslání komentáře');
@@ -56,30 +64,46 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 	await submitBtn.click();
 	ctx.log('Kliknuto na tlačítko odeslání');
 
-	// Wait for AJAX — comment appears as .comment.loaded
+	// Wait for AJAX response — new comment appears as .comment.loaded
 	ctx.log('Čekám na uložení komentáře...');
 	try {
-		await ctx.page.locator('.comment.loaded').first().waitFor({ state: 'visible', timeout: 15000 });
+		// Wait for a new comment to appear or the form to disappear
+		await Promise.race([
+			ctx.page.waitForResponse(
+				(resp) => resp.url().includes('comments') && resp.status() === 200,
+				{ timeout: 15000 },
+			),
+			ctx.page.waitForTimeout(10000),
+		]);
 	} catch {
-		ctx.log('Element .comment.loaded se neobjevil — zkouším alternativní ověření');
+		// Continue checking anyway
 	}
 
-	// Verify the comment text is present in the first comment
-	const latestComment = await ctx.page.locator('.object_comments .comment_content_container .body.formatted_content')
+	await ctx.page.waitForTimeout(1000);
+
+	// Verify the comment text is present
+	const latestComment = await ctx.page.locator('.object_comments .comment.loaded .body.formatted_content')
 		.first().textContent().catch(() => null);
 
-	if (latestComment && latestComment.includes(text.substring(0, 30))) {
+	if (latestComment && latestComment.includes(text.substring(0, 20))) {
 		ctx.log('Komentář úspěšně vytvořen a ověřen');
 		return { success: true, verified: true };
 	}
 
-	// Check if comment form disappeared (form is gone = probably submitted OK)
-	const formGone = await editor.count() === 0;
-	if (formGone) {
+	// Check if form disappeared (submitted via AJAX)
+	const editorGone = await ctx.page.locator('.redactor_editor[contenteditable="true"]').count() === 0;
+	if (editorGone) {
 		ctx.log('Komentář odeslán (formulář zmizel)');
 		return { success: true, verified: false };
 	}
 
-	ctx.log('Komentář se možná neuložil — formulář stále viditelný');
-	return { success: true, verified: false };
+	// Last resort: check if any new comments appeared on page
+	const commentCount = await ctx.page.locator('.comment.loaded').count();
+	if (commentCount > 0) {
+		ctx.log(`Komentář pravděpodobně vytvořen (${commentCount} komentářů na stránce)`);
+		return { success: true, verified: false };
+	}
+
+	ctx.log('Komentář se nepodařilo ověřit');
+	return { success: false, error: 'Komentář se nepodařilo odeslat — formulář stále viditelný' };
 }
