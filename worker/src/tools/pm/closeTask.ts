@@ -17,7 +17,7 @@ export async function pmCloseTask(ctx: ToolContext, input: Record<string, unknow
 	const closeLink = ctx.page.getByRole('link', { name: linkName, exact: !keepSubtasks });
 
 	if (await closeLink.count() === 0) {
-		return { success: false, error: `Link "${linkName}" not found — task may already be completed` };
+		return { success: true, already_completed: true, message: `Úkol nelze dokončit — tlačítko "${linkName}" nenalezeno (možná už je dokončen)` };
 	}
 
 	await closeLink.click();

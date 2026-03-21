@@ -114,7 +114,7 @@ export async function pmOpenProject(ctx: ToolContext, input: Record<string, unkn
 
 	if (results.length === 0) {
 		ctx.log(`Projekt "${query}" nenalezen`);
-		return { success: false, error: `Projekt "${query}" nenalezen`, count: 0, results: [] };
+		return { success: true, found: false, count: 0, results: [], message: `Projekt "${query}" nenalezen` };
 	}
 
 	if (results.length > 1) {

@@ -1,4 +1,5 @@
 import type { ToolContext, ToolOutput } from '../types.js';
+import { fail } from './helpers.js';
 
 /**
  * pm_create_comment: Create a comment on the currently opened task.
@@ -10,13 +11,13 @@ import type { ToolContext, ToolOutput } from '../types.js';
 export async function pmCreateComment(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const text = String(input.text ?? '');
 	if (!text) {
-		return { success: false, error: 'Missing required parameter: text' };
+		return fail('Chybí povinný parametr: text');
 	}
 
 	// Click "Přidat komentář" to open the comment form
 	const addCommentLink = ctx.page.getByRole('link', { name: 'Přidat komentář' });
 	if (await addCommentLink.count() === 0) {
-		return { success: false, error: 'Comment link "Přidat komentář" not found on page' };
+		return fail('Odkaz "Přidat komentář" nenalezen — jste na stránce úkolu?');
 	}
 
 	await addCommentLink.click();
@@ -30,7 +31,7 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 		// Try a broader search
 		const anyTextarea = ctx.page.locator('textarea:visible');
 		if (await anyTextarea.count() === 0) {
-			return { success: false, error: 'Comment textarea not found after clicking "Přidat komentář"' };
+			return fail('Textarea pro komentář nenalezena po kliknutí na "Přidat komentář"');
 		}
 		await anyTextarea.last().fill(text);
 	} else {
@@ -45,7 +46,7 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 	);
 
 	if (await submitBtn.count() === 0) {
-		return { success: false, error: 'Comment submit button not found' };
+		return fail('Tlačítko pro odeslání komentáře nenalezeno');
 	}
 
 	await submitBtn.first().click();
