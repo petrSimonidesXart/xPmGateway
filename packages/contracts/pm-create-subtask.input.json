@@ -9,12 +9,27 @@
         },
         "assignee": {
             "type": "string",
-            "description": "Zodpovědná osoba (volitelné)"
+            "description": "Jméno zodpovědné osoby (vybere se ze selectu)"
         },
-        "due_date": {
+        "label": {
             "type": "string",
-            "format": "date",
-            "description": "Termín podúkolu (YYYY-MM-DD, volitelné)"
+            "description": "Štítek: Řešit, Schůzka, apod."
+        },
+        "schedule": {
+            "type": "string",
+            "description": "Plánování: this_week, next_week, after_next_week, nebo datum YYYY/MM/DD"
+        },
+        "schedule_from": {
+            "type": "string",
+            "description": "Datum od (YYYY/MM/DD) pro vícedenní úkoly"
+        },
+        "schedule_to": {
+            "type": "string",
+            "description": "Datum do (YYYY/MM/DD) pro vícedenní úkoly"
+        },
+        "estimate": {
+            "type": "string",
+            "description": "Časový odhad: 1 (hodina), 0,5 (půl hodiny), :30 (30 min)"
         }
     },
     "additionalProperties": false

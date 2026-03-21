@@ -1,12 +1,12 @@
 import type { ToolContext, ToolOutput } from '../types.js';
-import { fail } from './helpers.js';
+import { safeClick, safeWaitFor, fail } from './helpers.js';
 
 /**
  * pm_create_comment: Create a comment on the currently opened task.
  * Input: { text: string }
  * Output: { success }
  *
- * "Přidat komentář" link opens a JS form/popup. We click it, fill the textarea, submit.
+ * Clicks "Přidat komentář" link → fills .redactor_visual_editor_textarea → clicks "Komentář" button.
  */
 export async function pmCreateComment(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const text = String(input.text ?? '');
@@ -14,43 +14,36 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 		return fail('Chybí povinný parametr: text');
 	}
 
-	// Click "Přidat komentář" to open the comment form
-	const addCommentLink = ctx.page.getByRole('link', { name: 'Přidat komentář' });
-	if (await addCommentLink.count() === 0) {
+	ctx.log('Otevírám formulář pro komentář...');
+
+	// Click "Přidat komentář"
+	const clicked = await safeClick(
+		ctx, ctx.page.getByRole('link', { name: 'Přidat komentář' }), 'Odkaz "Přidat komentář"',
+	);
+	if (!clicked) {
 		return fail('Odkaz "Přidat komentář" nenalezen — jste na stránce úkolu?');
 	}
+	await ctx.page.waitForTimeout(500); // wait for editor to render
 
-	await addCommentLink.click();
-	// Wait for the comment form to appear (JS popup/inline form)
-	await ctx.page.waitForTimeout(500);
-
-	// Find and fill the comment textarea
-	const commentField = ctx.page.locator('textarea[name*="comment"], textarea[name*="body"], textarea[name*="note"], #comment_body, .comment-form textarea, textarea.body');
-
-	if (await commentField.count() === 0) {
-		// Try a broader search
-		const anyTextarea = ctx.page.locator('textarea:visible');
-		if (await anyTextarea.count() === 0) {
-			return fail('Textarea pro komentář nenalezena po kliknutí na "Přidat komentář"');
-		}
-		await anyTextarea.last().fill(text);
-	} else {
-		await commentField.first().fill(text);
+	// Fill the Redactor visual editor textarea
+	ctx.log(`Vyplňuji komentář (${text.length} znaků)...`);
+	const editor = ctx.page.locator('.redactor_visual_editor_textarea');
+	const editorReady = await safeWaitFor(ctx, editor, 'Textarea komentáře (.redactor_visual_editor_textarea)');
+	if (!editorReady) {
+		return fail('Textarea pro komentář se neotevřela');
 	}
+	await editor.fill(text);
 
-	// Submit the comment
-	const submitBtn = ctx.page.locator(
-		'button:has-text("Odeslat"), button:has-text("Přidat"), '
-		+ 'input[type="submit"][value*="Odeslat"], input[type="submit"][value*="Přidat"], '
-		+ '.comment-form button[type="submit"], .comment-form input[type="submit"]',
+	// Submit — click "Komentář" button
+	ctx.log('Odesílám komentář...');
+	const submitted = await safeClick(
+		ctx, ctx.page.getByRole('button', { name: 'Komentář' }), 'Tlačítko "Komentář"',
 	);
-
-	if (await submitBtn.count() === 0) {
-		return fail('Tlačítko pro odeslání komentáře nenalezeno');
+	if (!submitted) {
+		return fail('Tlačítko "Komentář" nenalezeno');
 	}
-
-	await submitBtn.first().click();
 	await ctx.page.waitForLoadState('networkidle');
 
+	ctx.log('Komentář vytvořen');
 	return { success: true };
 }

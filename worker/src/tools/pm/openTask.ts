@@ -7,6 +7,7 @@ import { safeClick, safeWaitFor, fail } from './helpers.js';
  * Output: { success, found, task_id, name, path_info, count, results[] }
  *
  * Assumes the page is already on a project page (after pm_open_project).
+ * Uses #tasks textbox filter, then clicks matching task text.
  */
 export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const pathInfo = input.path_info as string | undefined;
@@ -49,29 +50,45 @@ export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown
 	}
 	await ctx.page.waitForLoadState('networkidle');
 
-	// Type in task search/filter within #tasks section
+	// Type in task filter within #tasks section
 	const taskFilter = ctx.page.locator('#tasks').getByRole('textbox');
 	const filterReady = await safeWaitFor(ctx, taskFilter, 'Filtr úkolů v #tasks');
-	if (filterReady) {
-		await taskFilter.pressSequentially(query, { delay: 50 });
-		await ctx.page.waitForTimeout(500);
+	if (!filterReady) {
+		return fail('Filtr úkolů nenalezen na stránce');
 	}
 
-	// Scrape visible task rows
+	await taskFilter.click();
+	await taskFilter.pressSequentially(query, { delay: 50 });
+	await ctx.page.waitForTimeout(800); // wait for JS filtering
+
+	// Scrape visible task rows — look for links containing task path
 	const results = await ctx.page.evaluate((searchQuery: string) => {
 		const tasks: Array<{ task_id: string; name: string; path_info: string }> = [];
-		const links = document.querySelectorAll('#tasks a[href*="tasks%2F"], #tasks a[href*="tasks/"]');
-		for (const link of links) {
-			const name = link.textContent?.trim() ?? '';
+		// Tasks section contains rows with task links
+		const tasksSection = document.getElementById('tasks');
+		if (!tasksSection) return tasks;
+
+		const rows = tasksSection.querySelectorAll('tr, .task_list_row, li');
+		for (const row of rows) {
+			const el = row as HTMLElement;
+			if (el.offsetParent === null || el.style.display === 'none') continue;
+
+			const link = el.querySelector('a[href*="tasks"]');
+			if (!link) continue;
+
+			const text = link.textContent?.trim() ?? '';
 			const href = link.getAttribute('href') ?? '';
 			const pathMatch = /path_info=([^&]+)/.exec(href);
-			const pi = pathMatch ? decodeURIComponent(pathMatch[1]) : '';
-			const taskIdMatch = /tasks\/(\d+)/.exec(pi);
-			const taskId = taskIdMatch ? taskIdMatch[1] : '';
+			const pathInfo = pathMatch ? decodeURIComponent(pathMatch[1]) : '';
+			const taskIdMatch = /tasks\/(\d+)/.exec(pathInfo);
 
-			if (name && taskId && name.toLowerCase().includes(searchQuery.toLowerCase())) {
-				if (!tasks.some((t) => t.task_id === taskId)) {
-					tasks.push({ task_id: taskId, name, path_info: pi });
+			if (!taskIdMatch || !text) continue;
+			// Clean up text — remove leading #N
+			const name = text.replace(/^#\d+\s*/, '').trim();
+
+			if (name.toLowerCase().includes(searchQuery.toLowerCase()) || text.toLowerCase().includes(searchQuery.toLowerCase())) {
+				if (!tasks.some((t) => t.task_id === taskIdMatch[1])) {
+					tasks.push({ task_id: taskIdMatch[1], name, path_info: pathInfo });
 				}
 			}
 		}
@@ -79,10 +96,10 @@ export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown
 	}, query);
 
 	if (results.length === 0) {
-		// Try clicking text match directly (popup-style filter)
-		const directLink = ctx.page.getByText(query, { exact: false });
-		if (await directLink.count() > 0) {
-			await directLink.first().click();
+		// Fallback: try clicking text directly (the codegen approach)
+		const directMatch = ctx.page.locator('#tasks').getByText(query, { exact: false });
+		if (await directMatch.count() > 0) {
+			await directMatch.first().click();
 			await ctx.page.waitForLoadState('networkidle');
 
 			const url = ctx.page.url();
@@ -95,52 +112,40 @@ export async function pmOpenTask(ctx: ToolContext, input: Record<string, unknown
 				const titleClean = title?.replace(/^#\d+:\s*/, '').trim() ?? query;
 				ctx.log(`Úkol "${titleClean}" nalezen a otevřen`);
 				return {
-					success: true,
-					found: true,
-					task_id: taskIdMatch[1],
-					name: titleClean,
-					path_info: pi,
-					count: 1,
-					results: [{ task_id: taskIdMatch[1], name: titleClean, path_info: pi }],
+					success: true, found: true,
+					task_id: taskIdMatch[1], name: titleClean, path_info: pi,
+					count: 1, results: [{ task_id: taskIdMatch[1], name: titleClean, path_info: pi }],
 				};
 			}
 		}
 
 		ctx.log(`Úkol "${query}" nenalezen`);
-		return {
-			success: true,
-			found: false,
-			count: 0,
-			results: [],
-			message: `Úkol "${query}" nenalezen v aktuálním projektu`,
-		};
+		return { success: true, found: false, count: 0, results: [], message: `Úkol "${query}" nenalezen` };
 	}
 
 	if (results.length > 1) {
 		ctx.log(`Nalezeno ${results.length} úkolů — potřebuji upřesnění`);
 		return {
-			success: false,
-			needs_input: true,
+			success: false, needs_input: true,
 			input_prompt: `Nalezeno ${results.length} úkolů pro "${query}". Vyberte úkol:`,
-			options: results,
-			count: results.length,
-			results,
+			options: results, count: results.length, results,
 		};
 	}
 
-	// Exactly 1 result — click it
+	// Exactly 1 — click it via text in #tasks
 	ctx.log(`Nalezen úkol "${results[0].name}", otevírám...`);
-	await ctx.page.getByText(results[0].name).first().click();
+	const taskLink = ctx.page.locator('#tasks').getByText(results[0].name, { exact: false });
+	if (await taskLink.count() > 0) {
+		await taskLink.first().click();
+	} else {
+		await ctx.page.goto(`${ctx.baseUrl}?path_info=${encodeURIComponent(results[0].path_info)}`);
+	}
 	await ctx.page.waitForLoadState('networkidle');
 
 	ctx.log(`Úkol "${results[0].name}" otevřen`);
 	return {
-		success: true,
-		found: true,
-		task_id: results[0].task_id,
-		name: results[0].name,
-		path_info: results[0].path_info,
-		count: 1,
-		results,
+		success: true, found: true,
+		task_id: results[0].task_id, name: results[0].name, path_info: results[0].path_info,
+		count: 1, results,
 	};
 }

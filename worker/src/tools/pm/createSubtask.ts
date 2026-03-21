@@ -1,79 +1,147 @@
 import type { ToolContext, ToolOutput } from '../types.js';
+import { safeClick, safeWaitFor, fail } from './helpers.js';
 
 /**
  * pm_create_subtask: Create a subtask on the currently opened task.
- * Input: { name: string, assignee?: string, due_date?: string }
- * Output: { success, subtask_id?, path_info? }
  *
- * Uses "Nový podúkol" link → subtasks/add page → fill form → submit.
+ * Input: {
+ *   name: string          — název podúkolu (povinný)
+ *   assignee?: string     — jméno zodpovědné osoby (vybere se z selectu podle label)
+ *   label?: string        — štítek: "Řešit", "Schůzka" atd. (vybere se podle label)
+ *   schedule?: string     — "this_week" | "next_week" | "after_next_week" | "YYYY/MM/DD"
+ *   schedule_from?: string — datum od (YYYY/MM/DD), pro vícedenní úkoly
+ *   schedule_to?: string  — datum do (YYYY/MM/DD), pro vícedenní úkoly
+ *   estimate?: string     — odhad: "1" (hodina), "0,5" (půl hodiny), ":30" (30 min)
+ * }
+ *
+ * Output: { success, subtask_id? }
+ *
+ * Form fields use dynamic IDs like ActiveCollab_element_*_summary_field.
+ * We match by id suffix: [id$="_summary_field"], [id$="_select_assignee"], etc.
  */
 export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const name = String(input.name ?? '');
 	if (!name) {
-		return { success: false, error: 'Missing required parameter: name' };
+		return fail('Chybí povinný parametr: name');
 	}
+
+	ctx.log('Otevírám formulář pro nový podúkol...');
 
 	// Click "Nový podúkol" link
-	const newSubtaskLink = ctx.page.getByRole('link', { name: 'Nový podúkol' });
-	if (await newSubtaskLink.count() === 0) {
-		return { success: false, error: 'Link "Nový podúkol" not found on page' };
-	}
-
-	await newSubtaskLink.click();
-	await ctx.page.waitForLoadState('networkidle');
-
-	// Fill subtask name
-	const nameField = ctx.page.locator(
-		'input[name*="name"], input[name*="title"], input[name*="subject"]',
+	const clicked = await safeClick(
+		ctx, ctx.page.getByRole('link', { name: 'Nový podúkol' }), 'Odkaz "Nový podúkol"',
 	);
-	if (await nameField.count() === 0) {
-		return { success: false, error: 'Subtask name field not found on form' };
+	if (!clicked) {
+		return fail('Odkaz "Nový podúkol" nenalezen — jste na stránce úkolu?');
 	}
-	await nameField.first().fill(name);
+	await ctx.page.waitForTimeout(500); // wait for form to render
 
-	// Optional: assignee
+	// Fill name (summary_field)
+	ctx.log(`Vyplňuji název: "${name}"`);
+	const nameField = ctx.page.locator('[id$="_summary_field"]');
+	const nameReady = await safeWaitFor(ctx, nameField, 'Pole pro název podúkolu');
+	if (!nameReady) {
+		return fail('Pole pro název podúkolu nenalezeno ve formuláři');
+	}
+	await nameField.fill(name);
+
+	// Assignee (select by label text)
 	if (input.assignee) {
-		const assigneeField = ctx.page.locator(
-			'select[name*="assignee"], select[name*="responsible"], '
-			+ 'input[name*="assignee"], input[name*="responsible"]',
-		);
-		if (await assigneeField.count() > 0) {
-			const tagName = await assigneeField.first().evaluate((el) => el.tagName.toLowerCase());
-			if (tagName === 'select') {
-				await assigneeField.first().selectOption({ label: String(input.assignee) });
-			} else {
-				await assigneeField.first().fill(String(input.assignee));
+		ctx.log(`Nastavuji zodpovědnou osobu: "${input.assignee}"`);
+		const assigneeSelect = ctx.page.locator('[id$="_select_assignee"]');
+		if (await assigneeSelect.count() > 0) {
+			await assigneeSelect.selectOption({ label: String(input.assignee) });
+		} else {
+			ctx.log('Select pro zodpovědnou osobu nenalezen');
+		}
+	}
+
+	// Label/tag (select by label text)
+	if (input.label) {
+		ctx.log(`Nastavuji štítek: "${input.label}"`);
+		const labelSelect = ctx.page.locator('[id$="_label"]').first();
+		if (await labelSelect.count() > 0) {
+			await labelSelect.selectOption({ label: String(input.label) });
+		} else {
+			ctx.log('Select pro štítek nenalezen');
+		}
+	}
+
+	// Schedule — quick links or specific date
+	const schedule = input.schedule as string | undefined;
+	if (schedule) {
+		if (schedule === 'this_week') {
+			ctx.log('Plánuji na tento týden');
+			await ctx.page.locator('#scheduleThisWeek').click().catch(() => {
+				ctx.log('Tlačítko #scheduleThisWeek nenalezeno');
+			});
+		} else if (schedule === 'next_week') {
+			ctx.log('Plánuji na příští týden');
+			await ctx.page.locator('#scheduleNextWeek').click().catch(() => {
+				ctx.log('Tlačítko #scheduleNextWeek nenalezeno');
+			});
+		} else if (schedule === 'after_next_week') {
+			ctx.log('Plánuji na přespříští týden');
+			await ctx.page.locator('#scheduleAfterNextWeek').click().catch(() => {
+				ctx.log('Tlačítko #scheduleAfterNextWeek nenalezeno');
+			});
+		} else {
+			// Specific date — fill into due_on field (format YYYY/MM/DD)
+			ctx.log(`Nastavuji termín: ${schedule}`);
+			const dueField = ctx.page.locator('[id$="_due_on"]');
+			if (await dueField.count() > 0) {
+				await dueField.fill(schedule);
 			}
 		}
 	}
 
-	// Optional: due date
-	if (input.due_date) {
-		const dateField = ctx.page.locator(
-			'input[name*="due"], input[name*="deadline"], input[type="date"]',
-		);
-		if (await dateField.count() > 0) {
-			await dateField.first().fill(String(input.due_date));
+	// Date range (from/to) for multi-day tasks
+	if (input.schedule_from) {
+		const fromField = ctx.page.locator('[id$="_start_on"], [id$="_due_on"]').first();
+		if (await fromField.count() > 0) {
+			await fromField.fill(String(input.schedule_from));
+		}
+	}
+	if (input.schedule_to) {
+		const toField = ctx.page.locator('[id$="_due_on"]');
+		if (await toField.count() > 0) {
+			await toField.fill(String(input.schedule_to));
 		}
 	}
 
-	// Submit form
-	const submitBtn = ctx.page.locator(
-		'button[type="submit"], input[type="submit"], '
-		+ 'button:has-text("Vytvořit"), button:has-text("Uložit"), button:has-text("Přidat")',
-	);
-	if (await submitBtn.count() > 0) {
-		await submitBtn.first().click();
-		await ctx.page.waitForLoadState('networkidle');
+	// Estimate
+	if (input.estimate) {
+		ctx.log(`Nastavuji odhad: ${input.estimate}`);
+		const estimateField = ctx.page.locator('[id$="_estimate"]');
+		if (await estimateField.count() > 0) {
+			await estimateField.fill(String(input.estimate));
+		}
 	}
 
-	// Extract subtask ID from resulting URL
-	const currentUrl = ctx.page.url();
-	const subtaskMatch = /subtasks[/%]2[fF](\d+)/.exec(currentUrl) || /subtasks\/(\d+)/.exec(currentUrl);
+	// Submit — "Přidat úkol" button
+	ctx.log('Odesílám formulář...');
+	const submitted = await safeClick(
+		ctx, ctx.page.getByRole('button', { name: 'Přidat úkol' }), 'Tlačítko "Přidat úkol"',
+	);
+	if (!submitted) {
+		return fail('Tlačítko "Přidat úkol" nenalezeno');
+	}
+	await ctx.page.waitForLoadState('networkidle');
 
+	// Try to extract subtask ID from the page
+	const subtaskId = await ctx.page.evaluate(() => {
+		// Look for the last subtask link on the page
+		const links = document.querySelectorAll('a[href*="subtasks"]');
+		const last = links[links.length - 1];
+		if (!last) return null;
+		const href = last.getAttribute('href') ?? '';
+		const match = /subtasks[/%]2[fF](\d+)/.exec(href) || /subtasks\/(\d+)/.exec(href);
+		return match ? match[1] : null;
+	});
+
+	ctx.log(`Podúkol vytvořen${subtaskId ? ` (ID: ${subtaskId})` : ''}`);
 	return {
 		success: true,
-		subtask_id: subtaskMatch?.[1] ?? null,
-		path_info: null,
+		subtask_id: subtaskId,
 	};
 }
