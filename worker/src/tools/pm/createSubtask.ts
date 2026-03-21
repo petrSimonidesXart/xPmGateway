@@ -4,6 +4,8 @@ import type { ToolContext, ToolOutput } from '../types.js';
  * pm_create_subtask: Create a subtask on the currently opened task.
  * Input: { name: string, assignee?: string, due_date?: string }
  * Output: { success, subtask_id?, path_info? }
+ *
+ * Uses "Nový podúkol" link → subtasks/add page → fill form → submit.
  */
 export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const name = String(input.name ?? '');
@@ -11,62 +13,63 @@ export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, un
 		return { success: false, error: 'Missing required parameter: name' };
 	}
 
-	// Click "New subtask" / "Nový podúkol" button
-	const newSubtaskBtn = ctx.page.locator(
-		'a:has-text("Nový podúkol"), button:has-text("Nový podúkol"), '
-		+ 'a:has-text("Přidat podúkol"), button:has-text("Přidat podúkol"), '
-		+ 'a:has-text("New subtask"), button:has-text("New subtask"), '
-		+ '.add-subtask, .new-subtask',
-	);
-
-	if (await newSubtaskBtn.count() > 0) {
-		await newSubtaskBtn.first().click();
-		await ctx.page.waitForLoadState('networkidle');
+	// Click "Nový podúkol" link
+	const newSubtaskLink = ctx.page.getByRole('link', { name: 'Nový podúkol' });
+	if (await newSubtaskLink.count() === 0) {
+		return { success: false, error: 'Link "Nový podúkol" not found on page' };
 	}
 
-	// Fill the subtask form
+	await newSubtaskLink.click();
+	await ctx.page.waitForLoadState('networkidle');
+
+	// Fill subtask name
 	const nameField = ctx.page.locator(
-		'input[name*="name"], input[name*="title"], input[name*="subject"], '
-		+ '#subtask-name, #subtask-title',
+		'input[name*="name"], input[name*="title"], input[name*="subject"]',
 	);
-
 	if (await nameField.count() === 0) {
-		return { success: false, error: 'Subtask name field not found' };
+		return { success: false, error: 'Subtask name field not found on form' };
 	}
-
 	await nameField.first().fill(name);
 
+	// Optional: assignee
 	if (input.assignee) {
 		const assigneeField = ctx.page.locator(
-			'input[name*="assignee"], select[name*="assignee"], '
-			+ 'input[name*="solver"], select[name*="solver"]',
+			'select[name*="assignee"], select[name*="responsible"], '
+			+ 'input[name*="assignee"], input[name*="responsible"]',
 		);
 		if (await assigneeField.count() > 0) {
-			await assigneeField.first().fill(String(input.assignee));
+			const tagName = await assigneeField.first().evaluate((el) => el.tagName.toLowerCase());
+			if (tagName === 'select') {
+				await assigneeField.first().selectOption({ label: String(input.assignee) });
+			} else {
+				await assigneeField.first().fill(String(input.assignee));
+			}
 		}
 	}
 
+	// Optional: due date
 	if (input.due_date) {
 		const dateField = ctx.page.locator(
-			'input[name*="due"], input[name*="deadline"], input[name*="date"], '
-			+ 'input[type="date"]',
+			'input[name*="due"], input[name*="deadline"], input[type="date"]',
 		);
 		if (await dateField.count() > 0) {
 			await dateField.first().fill(String(input.due_date));
 		}
 	}
 
-	// Submit
+	// Submit form
 	const submitBtn = ctx.page.locator(
 		'button[type="submit"], input[type="submit"], '
-		+ 'button:has-text("Uložit"), button:has-text("Vytvořit")',
+		+ 'button:has-text("Vytvořit"), button:has-text("Uložit"), button:has-text("Přidat")',
 	);
-	await submitBtn.first().click();
-	await ctx.page.waitForLoadState('networkidle');
+	if (await submitBtn.count() > 0) {
+		await submitBtn.first().click();
+		await ctx.page.waitForLoadState('networkidle');
+	}
 
-	// Try to extract subtask ID from the URL or page
+	// Extract subtask ID from resulting URL
 	const currentUrl = ctx.page.url();
-	const subtaskMatch = /subtasks[/](\d+)/.exec(currentUrl) || /subtasks%2F(\d+)/.exec(currentUrl);
+	const subtaskMatch = /subtasks[/%]2[fF](\d+)/.exec(currentUrl) || /subtasks\/(\d+)/.exec(currentUrl);
 
 	return {
 		success: true,

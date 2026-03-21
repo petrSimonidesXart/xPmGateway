@@ -4,6 +4,8 @@ import type { ToolContext, ToolOutput } from '../types.js';
  * pm_create_comment: Create a comment on the currently opened task.
  * Input: { text: string }
  * Output: { success }
+ *
+ * "Přidat komentář" link opens a JS form/popup. We click it, fill the textarea, submit.
  */
 export async function pmCreateComment(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const text = String(input.text ?? '');
@@ -11,27 +13,35 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 		return { success: false, error: 'Missing required parameter: text' };
 	}
 
-	// Find the comment textarea
-	const commentField = ctx.page.locator(
-		'textarea[name*="comment"], textarea[name*="note"], textarea[name*="text"], '
-		+ 'textarea[placeholder*="koment"], textarea[placeholder*="poznám"], '
-		+ '.comment-form textarea, #comment-text, .new-comment textarea',
-	);
-
-	if (await commentField.count() === 0) {
-		return { success: false, error: 'Comment form not found on page' };
+	// Click "Přidat komentář" to open the comment form
+	const addCommentLink = ctx.page.getByRole('link', { name: 'Přidat komentář' });
+	if (await addCommentLink.count() === 0) {
+		return { success: false, error: 'Comment link "Přidat komentář" not found on page' };
 	}
 
-	await commentField.first().fill(text);
+	await addCommentLink.click();
+	// Wait for the comment form to appear (JS popup/inline form)
+	await ctx.page.waitForTimeout(500);
+
+	// Find and fill the comment textarea
+	const commentField = ctx.page.locator('textarea[name*="comment"], textarea[name*="body"], textarea[name*="note"], #comment_body, .comment-form textarea, textarea.body');
+
+	if (await commentField.count() === 0) {
+		// Try a broader search
+		const anyTextarea = ctx.page.locator('textarea:visible');
+		if (await anyTextarea.count() === 0) {
+			return { success: false, error: 'Comment textarea not found after clicking "Přidat komentář"' };
+		}
+		await anyTextarea.last().fill(text);
+	} else {
+		await commentField.first().fill(text);
+	}
 
 	// Submit the comment
 	const submitBtn = ctx.page.locator(
-		'.comment-form button[type="submit"], '
-		+ '.comment-form input[type="submit"], '
-		+ 'button:has-text("Přidat komentář"), '
-		+ 'button:has-text("Odeslat"), '
-		+ 'button:has-text("Uložit komentář"), '
-		+ '.new-comment button[type="submit"]',
+		'button:has-text("Odeslat"), button:has-text("Přidat"), '
+		+ 'input[type="submit"][value*="Odeslat"], input[type="submit"][value*="Přidat"], '
+		+ '.comment-form button[type="submit"], .comment-form input[type="submit"]',
 	);
 
 	if (await submitBtn.count() === 0) {

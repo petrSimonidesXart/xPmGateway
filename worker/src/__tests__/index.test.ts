@@ -2,27 +2,29 @@ import { describe, it, expect } from 'vitest';
 
 describe('Worker handler registry', () => {
     it('exports Job interface and handler type', async () => {
-        // Verify that the module exports the expected types
         const mod = await import('../index.js');
         expect(mod).toBeDefined();
     });
 
-    it('registers all 5 handlers', async () => {
-        // The handlers map is not exported, but we can verify
-        // all handler modules are importable
-        const handlers = await Promise.all([
-            import('../handlers/createTask.js'),
-            import('../handlers/exportFilteredTasks.js'),
-            import('../handlers/exportTasks.js'),
-            import('../handlers/getTask.js'),
-            import('../handlers/verifyCredentials.js'),
-        ]);
+    it('registers all PM tools in the registry', async () => {
+        const { toolRegistry } = await import('../tools/registry.js');
 
-        expect(handlers).toHaveLength(5);
-        handlers.forEach((mod) => {
-            // Each handler module should export a function
-            const exportedFn = Object.values(mod).find((v) => typeof v === 'function');
-            expect(exportedFn).toBeDefined();
-        });
+        expect(Object.keys(toolRegistry).length).toBeGreaterThanOrEqual(14);
+
+        // Verify key tools exist
+        expect(toolRegistry.pm_login).toBeDefined();
+        expect(toolRegistry.pm_open_project).toBeDefined();
+        expect(toolRegistry.pm_open_task).toBeDefined();
+        expect(toolRegistry.pm_read_task).toBeDefined();
+        expect(toolRegistry.pm_create_comment).toBeDefined();
+        expect(toolRegistry.pm_create_subtask).toBeDefined();
+        expect(toolRegistry.pm_close_task).toBeDefined();
+        expect(toolRegistry.pm_export_csv).toBeDefined();
+        expect(toolRegistry.pm_time_track).toBeDefined();
+
+        // All entries are functions
+        for (const [name, fn] of Object.entries(toolRegistry)) {
+            expect(typeof fn).toBe('function');
+        }
     });
 });

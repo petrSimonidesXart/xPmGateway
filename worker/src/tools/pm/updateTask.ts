@@ -2,8 +2,10 @@ import type { ToolContext, ToolOutput } from '../types.js';
 
 /**
  * pm_update_task: Update fields of the currently opened task.
- * Input: { fields: { description?: string, assignee?: string, due_date?: string, status?: string, ... } }
+ * Input: { fields: { description?: string, assignee?: string, due_date?: string, ... } }
  * Output: { success }
+ *
+ * Clicks "Upravit" link → fills form fields → submits.
  */
 export async function pmUpdateTask(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
 	const fields = input.fields as Record<string, string> | undefined;
@@ -11,17 +13,14 @@ export async function pmUpdateTask(ctx: ToolContext, input: Record<string, unkno
 		return { success: false, error: 'Missing required parameter: fields' };
 	}
 
-	// Click edit button if needed
-	const editBtn = ctx.page.locator(
-		'a:has-text("Upravit"), button:has-text("Upravit"), '
-		+ 'a:has-text("Edit"), button:has-text("Edit"), '
-		+ '.edit-task, [data-action="edit"]',
-	);
-
-	if (await editBtn.count() > 0) {
-		await editBtn.first().click();
-		await ctx.page.waitForLoadState('networkidle');
+	// Click "Upravit" link
+	const editLink = ctx.page.getByRole('link', { name: 'Upravit' });
+	if (await editLink.count() === 0) {
+		return { success: false, error: 'Link "Upravit" not found on task page' };
 	}
+
+	await editLink.click();
+	await ctx.page.waitForLoadState('networkidle');
 
 	// Fill each field
 	for (const [key, value] of Object.entries(fields)) {
@@ -32,6 +31,8 @@ export async function pmUpdateTask(ctx: ToolContext, input: Record<string, unkno
 			const tagName = await field.first().evaluate((el) => el.tagName.toLowerCase());
 			if (tagName === 'select') {
 				await field.first().selectOption({ label: value });
+			} else if (tagName === 'textarea') {
+				await field.first().fill(value);
 			} else {
 				await field.first().fill(value);
 			}

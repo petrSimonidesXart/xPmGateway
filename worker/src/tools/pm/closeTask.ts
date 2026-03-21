@@ -2,23 +2,25 @@ import type { ToolContext, ToolOutput } from '../types.js';
 
 /**
  * pm_close_task: Close the currently opened task.
- * Input: — (operates on current page)
+ * Input: { keep_subtasks?: boolean }
  * Output: { success }
+ *
+ * Uses "Dokončit" or "Dokončit (podúkoly neuzavírat)" link on task detail page.
  */
-export async function pmCloseTask(ctx: ToolContext, _input: Record<string, unknown>): Promise<ToolOutput> {
-	const closeBtn = ctx.page.locator(
-		'a:has-text("Zavřít"), button:has-text("Zavřít"), '
-		+ 'a:has-text("Close"), button:has-text("Close"), '
-		+ 'a:has-text("Dokončit"), button:has-text("Dokončit"), '
-		+ '.close-task, .complete-task, '
-		+ '[data-action="close"], [data-action="complete"]',
-	);
+export async function pmCloseTask(ctx: ToolContext, input: Record<string, unknown>): Promise<ToolOutput> {
+	const keepSubtasks = input.keep_subtasks === true;
 
-	if (await closeBtn.count() === 0) {
-		return { success: false, error: 'Close/complete button not found on page' };
+	const linkName = keepSubtasks
+		? 'Dokončit (podúkoly neuzavírat)'
+		: 'Dokončit';
+
+	const closeLink = ctx.page.getByRole('link', { name: linkName, exact: !keepSubtasks });
+
+	if (await closeLink.count() === 0) {
+		return { success: false, error: `Link "${linkName}" not found — task may already be completed` };
 	}
 
-	await closeBtn.first().click();
+	await closeLink.click();
 	await ctx.page.waitForLoadState('networkidle');
 
 	return { success: true };
