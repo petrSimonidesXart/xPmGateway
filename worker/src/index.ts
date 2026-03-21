@@ -1,10 +1,8 @@
 import 'dotenv/config';
 import { AdapterApi } from './lib/api.js';
-import { handleCreateTask } from './handlers/createTask.js';
-import { handleExportFilteredTasks } from './handlers/exportFilteredTasks.js';
-import { handleExportTasks } from './handlers/exportTasks.js';
-import { handleGetTask } from './handlers/getTask.js';
-import { handleVerifyCredentials } from './handlers/verifyCredentials.js';
+import { runToolStandalone } from './tools/standaloneRunner.js';
+import { handleRunScenario } from './tools/scenarioRunner.js';
+import { toolRegistry } from './tools/registry.js';
 
 const api = new AdapterApi(
     process.env.ADAPTER_API_URL!,
@@ -27,16 +25,9 @@ export interface Job {
 
 type JobHandler = (job: Job, api: AdapterApi) => Promise<void>;
 
-const handlers: Record<string, JobHandler> = {
-    create_task: handleCreateTask,
-    export_filtered_tasks: handleExportFilteredTasks,
-    export_tasks: handleExportTasks,
-    get_task: handleGetTask,
-    verify_credentials: handleVerifyCredentials,
-};
-
 async function pollLoop(): Promise<void> {
     console.log(`[Worker] Started. Polling ${process.env.ADAPTER_API_URL} every ${POLL_INTERVAL}ms`);
+    console.log(`[Worker] Registered tools: ${Object.keys(toolRegistry).join(', ')}`);
 
     while (true) {
         try {
@@ -45,25 +36,30 @@ async function pollLoop(): Promise<void> {
 
             if (job) {
                 console.log(`[Worker] Processing job ${job.id} (${job.tool_name}), attempt ${job.attempt}`);
-                const handler = handlers[job.tool_name];
-
-                if (!handler) {
-                    await api.submitResult(job.id, {
-                        status: 'failed',
-                        error: `No handler for tool: ${job.tool_name}`,
-                    });
-                    continue;
-                }
 
                 try {
-                    await handler(job, api);
+                    if (job.tool_name === 'run_scenario') {
+                        await handleRunScenario(job, api);
+                    } else if (toolRegistry[job.tool_name]) {
+                        await runToolStandalone(job, api);
+                    } else {
+                        await api.submitResult(job.id, {
+                            status: 'failed',
+                            error: `No handler for tool: ${job.tool_name}`,
+                        });
+                    }
                 } catch (error) {
                     const message = error instanceof Error ? error.message : String(error);
                     console.error(`[Worker] Job ${job.id} failed:`, message);
-                    await api.submitResult(job.id, {
-                        status: 'failed',
-                        error: message,
-                    });
+                    // Only submit if not already submitted by handler
+                    try {
+                        await api.submitResult(job.id, {
+                            status: 'failed',
+                            error: message,
+                        });
+                    } catch {
+                        // Result may have already been submitted by the handler
+                    }
                 }
             }
         } catch (error) {

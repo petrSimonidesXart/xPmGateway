@@ -41,6 +41,7 @@ services:
     - App\Model\Repository\RateLimitRepository
     - App\Model\Repository\AdminUserRepository
     - App\Model\Repository\ArtifactRepository
+    - App\Model\Repository\ScenarioRepository
 
     # Facades
     - App\Model\Facade\McpFacade
