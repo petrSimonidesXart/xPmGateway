@@ -23,10 +23,15 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Kroky</label>
+                        <div class="alert alert-info py-2 mb-2">
+                            <i class="ti ti-lock me-1"></i>
+                            <strong>Krok 0:</strong> <code>pm_login</code> — přihlášení proběhne automaticky před spuštěním scénáře
+                        </div>
                         <div class="mb-2 d-flex gap-2 align-items-center">
                             <select id="tool-picker" class="form-select form-select-sm" style="width: auto;">
                                 <option value="">— Přidat krok —</option>
                                 {foreach $availableTools as $tool}
+                                    {continueIf $tool->name === 'pm_login'}
                                     <option value="{$tool->name}">{$tool->name} — {$tool->description}</option>
                                 {/foreach}
                                 <optgroup label="Řízení">
@@ -73,10 +78,11 @@
             </div>
             <div class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
                 {foreach $availableTools as $tool}
-                <div class="list-group-item list-group-item-action py-1 px-3 tool-insert-item" data-tool="{$tool->name}" style="cursor: pointer;">
-                    <code class="small">{$tool->name}</code>
-                    <div class="text-secondary small">{$tool->description}</div>
-                </div>
+                    {continueIf $tool->name === 'pm_login'}
+                    <div class="list-group-item list-group-item-action py-1 px-3 tool-insert-item" data-tool="{$tool->name}" style="cursor: pointer;">
+                        <code class="small">{$tool->name}</code>
+                        <div class="text-secondary small">{$tool->description}</div>
+                    </div>
                 {/foreach}
             </div>
         </div>
