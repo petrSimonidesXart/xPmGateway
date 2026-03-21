@@ -129,6 +129,10 @@
     }
 
     function setSteps(steps) {
+        // Ensure empty inputs are {} not []
+        steps.forEach(function(s) {
+            if (s.input && Array.isArray(s.input) && s.input.length === 0) s.input = {};
+        });
         stepsField.value = JSON.stringify(steps, null, 2);
         syncSchema();
     }

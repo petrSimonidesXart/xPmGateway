@@ -157,10 +157,9 @@ async function executeToolStep(
 		throw new Error(`Unknown tool: ${step.tool}`);
 	}
 
-	// Resolve template expressions in input
-	const resolvedInput = step.input
-		? resolveTemplates(step.input, bag) as Record<string, unknown>
-		: {};
+	// Resolve template expressions in input (handle [] as {} for empty inputs)
+	const rawInput = (step.input && !Array.isArray(step.input)) ? step.input : {};
+	const resolvedInput = resolveTemplates(rawInput, bag) as Record<string, unknown>;
 
 	console.log(`[Scenario] Step ${stepNum} (${step.id}): ${step.tool}`);
 
