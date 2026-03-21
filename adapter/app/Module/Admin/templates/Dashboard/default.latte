@@ -3,7 +3,7 @@
 {block content}
 <div class="row row-deck row-cards">
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm">
+        <a href="{plink :Admin:Job:default, status => 'pending'}" class="card card-sm card-link">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-auto">
@@ -13,14 +13,14 @@
                     </div>
                     <div class="col">
                         <div class="fw-bold fs-3">{$pendingJobs}</div>
-                        <div class="text-secondary">Pending jobů</div>
+                        <div class="text-secondary">Pending úloh</div>
                     </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm">
+        <a href="{plink :Admin:Job:default, status => 'failed'}" class="card card-sm card-link">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-auto">
@@ -34,10 +34,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm">
+        <a href="{plink :Admin:Job:default}" class="card card-sm card-link">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-auto">
@@ -47,14 +47,14 @@
                     </div>
                     <div class="col">
                         <div class="fw-bold fs-3">{$totalJobsToday}</div>
-                        <div class="text-secondary">Jobů dnes</div>
+                        <div class="text-secondary">Úloh dnes</div>
                     </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-sm">
+        <a href="{plink :Admin:Client:default}" class="card card-sm card-link">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-auto">
@@ -68,19 +68,19 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Poslední joby</h3>
+                <h3 class="card-title">Poslední úlohy</h3>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Tool</th>
+                            <th>Nástroj</th>
                             <th>Status</th>
                             <th>Vytvořen</th>
                         </tr>
@@ -88,10 +88,14 @@
                     <tbody>
                     {foreach $recentJobs as $job}
                         <tr>
-                            <td><a href="{plink :Admin:Job:detail $job->id}">{$job->id|truncate:8}</a></td>
+                            <td><a href="{plink :Admin:Job:detail $job->id}"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></a></td>
                             <td>{$job->ref('tools', 'tool_id')?->name}</td>
                             <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
                             <td class="text-secondary">{$job->created_at|date:'d.m.Y H:i'}</td>
+                        </tr>
+                    {else}
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary py-4">Žádné úlohy.</td>
                         </tr>
                     {/foreach}
                     </tbody>
@@ -117,10 +121,24 @@
                     <tbody>
                     {foreach $recentActivity as $log}
                         <tr>
-                            <td>{$log->action}</td>
+                            <td><code>{$log->action}</code></td>
                             <td>{$log->client_name}</td>
-                            <td>{$log->result_status}</td>
+                            <td>
+                                {if $log->result_status === 'success'}
+                                    <span class="badge badge-success">{$log->result_status}</span>
+                                {elseif $log->result_status === 'failed'}
+                                    <span class="badge badge-failed">{$log->result_status}</span>
+                                {elseif $log->result_status}
+                                    <span class="badge bg-secondary">{$log->result_status}</span>
+                                {else}
+                                    —
+                                {/if}
+                            </td>
                             <td class="text-secondary">{$log->created_at|date:'d.m.Y H:i'}</td>
+                        </tr>
+                    {else}
+                        <tr>
+                            <td colspan="4" class="text-center text-secondary py-4">Žádná aktivita.</td>
                         </tr>
                     {/foreach}
                     </tbody>

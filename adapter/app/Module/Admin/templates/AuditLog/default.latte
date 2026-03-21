@@ -1,4 +1,4 @@
-{block title}Audit Log{/block}
+{block title}Audit log{/block}
 
 {block content}
 <div class="card">
@@ -16,16 +16,27 @@
                 <input type="text" name="audit_action" class="form-control form-control-sm" placeholder="Akce" value="{$filterAction}">
             </div>
             <div class="col-auto">
-                <input type="date" name="date_from" class="form-control form-control-sm" value="{$filterDateFrom}">
+                <label class="form-label form-label-sm mb-0 me-1 text-secondary">Od</label>
+                <input type="date" name="date_from" class="form-control form-control-sm d-inline-block" style="width: auto;" value="{$filterDateFrom}" placeholder="Od">
             </div>
             <div class="col-auto">
-                <input type="date" name="date_to" class="form-control form-control-sm" value="{$filterDateTo}">
+                <label class="form-label form-label-sm mb-0 me-1 text-secondary">Do</label>
+                <input type="date" name="date_to" class="form-control form-control-sm d-inline-block" style="width: auto;" value="{$filterDateTo}" placeholder="Do">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-sm btn-primary">
                     <i class="ti ti-filter me-1"></i>Filtrovat
                 </button>
             </div>
+            {var $activeFilterCount = ($filterClientId ? 1 : 0) + ($filterAction ? 1 : 0) + ($filterDateFrom ? 1 : 0) + ($filterDateTo ? 1 : 0)}
+            {if $activeFilterCount > 0}
+            <div class="col-auto">
+                <a href="{plink default}" class="btn btn-sm btn-outline-secondary">
+                    <i class="ti ti-x me-1"></i>Reset filtrů
+                    <span class="badge bg-primary ms-1">{$activeFilterCount}</span>
+                </a>
+            </div>
+            {/if}
         </form>
     </div>
     <div class="table-responsive">
@@ -35,7 +46,7 @@
                     <th>Čas</th>
                     <th>Akce</th>
                     <th>Klient</th>
-                    <th>Tool</th>
+                    <th>Nástroj</th>
                     <th>Status</th>
                     <th>IP</th>
                 </tr>
@@ -47,12 +58,57 @@
                     <td><code>{$log->action}</code></td>
                     <td>{$log->client_name}</td>
                     <td>{$log->tool_name}</td>
-                    <td>{$log->result_status}</td>
+                    <td>
+                        {if $log->result_status === 'success'}
+                            <span class="badge badge-success">{$log->result_status}</span>
+                        {elseif $log->result_status === 'failed'}
+                            <span class="badge badge-failed">{$log->result_status}</span>
+                        {elseif $log->result_status}
+                            <span class="badge bg-secondary">{$log->result_status}</span>
+                        {else}
+                            —
+                        {/if}
+                    </td>
                     <td class="text-secondary">{$log->ip_address}</td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="6" class="text-center text-secondary py-4">
+                        <i class="ti ti-mood-empty" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Žádné záznamy{if $activeFilterCount > 0} pro zvolené filtry{/if}.</p>
+                    </td>
                 </tr>
             {/foreach}
             </tbody>
         </table>
     </div>
+    {if $paginator->getPageCount() > 1}
+    <div class="card-footer d-flex align-items-center">
+        <p class="m-0 text-secondary">
+            Zobrazeno {$paginator->getOffset() + 1}–{min($paginator->getOffset() + $paginator->getLength(), $paginator->getItemCount())} z {$paginator->getItemCount()}
+        </p>
+        <ul class="pagination m-0 ms-auto">
+            <li n:class="page-item, $paginator->isFirst() ? disabled">
+                <a class="page-link" href="{plink default, client_id => $filterClientId, audit_action => $filterAction, date_from => $filterDateFrom, date_to => $filterDateTo, page => $paginator->getPage() - 1}">
+                    <i class="ti ti-chevron-left"></i>
+                </a>
+            </li>
+            {for $p = 1; $p <= $paginator->getPageCount(); $p++}
+                {if $p <= 3 || $p > $paginator->getPageCount() - 3 || abs($p - $paginator->getPage()) <= 1}
+                <li n:class="page-item, $p === $paginator->getPage() ? active">
+                    <a class="page-link" href="{plink default, client_id => $filterClientId, audit_action => $filterAction, date_from => $filterDateFrom, date_to => $filterDateTo, page => $p}">{$p}</a>
+                </li>
+                {elseif $p === 4 || $p === $paginator->getPageCount() - 3}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {/if}
+            {/for}
+            <li n:class="page-item, $paginator->isLast() ? disabled">
+                <a class="page-link" href="{plink default, client_id => $filterClientId, audit_action => $filterAction, date_from => $filterDateFrom, date_to => $filterDateTo, page => $paginator->getPage() + 1}">
+                    <i class="ti ti-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </div>
+    {/if}
 </div>
 {/block}

@@ -36,6 +36,30 @@ abstract class BasePresenter extends Presenter
 	}
 
 
+	public function getCsrfToken(): string
+	{
+		$session = $this->getSession('csrf');
+		if (!isset($session->token)) {
+			$session->token = bin2hex(random_bytes(16));
+		}
+		return $session->token;
+	}
+
+
+	protected function requirePost(): void
+	{
+		if (!$this->getHttpRequest()->isMethod('POST')) {
+			$this->error('Method not allowed', 405);
+		}
+
+		$token = $this->getHttpRequest()->getPost('_csrf');
+		$session = $this->getSession('csrf');
+		if (!$token || !hash_equals($session->token ?? '', $token)) {
+			$this->error('Invalid CSRF token', 403);
+		}
+	}
+
+
 	protected function beforeRender(): void
 	{
 		parent::beforeRender();

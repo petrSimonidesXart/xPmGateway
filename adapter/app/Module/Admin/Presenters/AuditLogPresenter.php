@@ -23,10 +23,20 @@ class AuditLogPresenter extends BasePresenter
 		$dateFrom = $this->getParameter('date_from') ? new \DateTime($this->getParameter('date_from')) : null;
 		$dateTo = $this->getParameter('date_to') ? new \DateTime($this->getParameter('date_to') . ' 23:59:59') : null;
 
+		$page = max(1, (int) ($this->getParameter('page') ?? 1));
+		$itemsPerPage = 50;
+		$totalCount = $this->auditLogRepository->countFiltered($clientId, $action, $dateFrom, $dateTo);
+
+		$paginator = new \Nette\Utils\Paginator;
+		$paginator->setItemsPerPage($itemsPerPage);
+		$paginator->setPage($page);
+		$paginator->setItemCount($totalCount);
+
 		$this->template->logs = $this->auditLogRepository->findFiltered(
-			$clientId, $action, $dateFrom, $dateTo, 100, 0,
+			$clientId, $action, $dateFrom, $dateTo, $paginator->getLength(), $paginator->getOffset(),
 		)->fetchAll();
 
+		$this->template->paginator = $paginator;
 		$this->template->clients = $this->clientRepository->getTable()->fetchPairs('id', 'name');
 		$this->template->filterClientId = $clientId;
 		$this->template->filterAction = $action;

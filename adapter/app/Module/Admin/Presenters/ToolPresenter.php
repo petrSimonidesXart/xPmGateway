@@ -24,6 +24,7 @@ class ToolPresenter extends BasePresenter
 
 	public function handleToggle(int $id): void
 	{
+		$this->requirePost();
 		$this->requireAdmin();
 
 		$tool = $this->toolRepository->findById($id);

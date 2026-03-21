@@ -1,9 +1,16 @@
 {block title}Klient: {$client->name}{/block}
 
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Klienti</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{$client->name}</li>
+</ol>
+{/block}
+
 {block actions}
 {if $isAdmin}
 <div class="btn-list">
-    <a href="{plink edit $client->id}" class="btn btn-primary">
+    <a href="{plink edit $client->id}" class="btn btn-outline-secondary">
         <i class="ti ti-edit me-1"></i>Upravit
     </a>
     <a href="{plink :Admin:Token:default $client->id}" class="btn btn-outline-secondary">
@@ -29,24 +36,37 @@
                 <div class="datagrid-title">Aktivní</div>
                 <div class="datagrid-content">
                     {if $client->is_active}
-                        <span class="status status-green">Ano</span>
+                        <span class="badge bg-green">Ano</span>
                     {else}
-                        <span class="status status-secondary">Ne</span>
+                        <span class="badge bg-secondary">Ne</span>
                     {/if}
                 </div>
             </div>
             <div class="datagrid-item">
                 <div class="datagrid-title">IP Whitelist</div>
-                <div class="datagrid-content">{$client->allowed_ips ?? 'Bez omezení'}</div>
+                <div class="datagrid-content">
+                    {if $client->allowed_ips}
+                        {foreach explode(',', $client->allowed_ips) as $ip}
+                            <code class="me-1">{$ip|trim}</code>
+                        {/foreach}
+                    {else}
+                        Bez omezení
+                    {/if}
+                </div>
             </div>
             <div class="datagrid-item">
                 <div class="datagrid-title">Oprávnění</div>
                 <div class="datagrid-content">
+                    {var $hasPermission = false}
                     {foreach $tools as $tool}
                         {if isset($permissions[$tool->id])}
                             <span class="badge bg-blue me-1">{$tool->name}</span>
+                            {var $hasPermission = true}
                         {/if}
                     {/foreach}
+                    {if !$hasPermission}
+                        <span class="text-secondary">Žádná oprávnění</span>
+                    {/if}
                 </div>
             </div>
         </div>

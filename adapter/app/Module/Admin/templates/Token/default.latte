@@ -1,5 +1,13 @@
 {block title}Tokeny: {$client->name}{/block}
 
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink :Admin:Client:default}">Klienti</a></li>
+    <li class="breadcrumb-item"><a href="{plink :Admin:Client:detail $client->id}">{$client->name}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Tokeny</li>
+</ol>
+{/block}
+
 {block actions}
 <a href="{plink :Admin:Client:detail $client->id}" class="btn btn-outline-secondary">
     <i class="ti ti-arrow-left me-1"></i>Zpět na klienta
@@ -51,10 +59,17 @@
                     </td>
                     <td>
                         {if $isAdmin && !$token->revoked_at}
-                            <a href="{plink revoke! tokenId => $token->id}" class="btn btn-sm btn-outline-danger"
-                               onclick="return confirm('Opravdu revokovat token?')">Revokovat</a>
+                            <form method="post" action="{plink revoke! tokenId => $token->id}" class="d-inline">
+                                <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        data-confirm="Opravdu revokovat token?">Revokovat</button>
+                            </form>
                         {/if}
                     </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="7" class="text-center text-secondary py-4">Žádné tokeny.</td>
                 </tr>
             {/foreach}
             </tbody>

@@ -69,6 +69,7 @@ class TokenPresenter extends BasePresenter
 
 	public function handleRevoke(int $tokenId): void
 	{
+		$this->requirePost();
 		$this->requireAdmin();
 
 		$this->apiTokenRepository->revoke($tokenId);

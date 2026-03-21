@@ -37,14 +37,21 @@
                     <td>
                         {if $isAdmin}
                             <div class="btn-list">
-                                <a href="{plink edit $account->id}" class="btn btn-sm">Upravit</a>
-                                <a href="{plink delete! $account->id}" class="btn btn-sm btn-outline-danger"
-                                   onclick="return confirm('Opravdu smazat service account {$account->name}?')">
-                                    <i class="ti ti-trash"></i>
-                                </a>
+                                <a href="{plink edit $account->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
+                                <form method="post" action="{plink delete! $account->id}" class="d-inline">
+                                    <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            data-confirm="Opravdu smazat service account {$account->name}?">
+                                        <i class="ti ti-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         {/if}
                     </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="5" class="text-center text-secondary py-4">Žádné service accounts.</td>
                 </tr>
             {/foreach}
             </tbody>

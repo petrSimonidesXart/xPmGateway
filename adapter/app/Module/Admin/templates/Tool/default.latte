@@ -1,4 +1,4 @@
-{block title}MCP Tooly{/block}
+{block title}Nástroje{/block}
 
 {block content}
 <div class="card">
@@ -26,11 +26,19 @@
                     </td>
                     <td>
                         {if $isAdmin}
-                            <a href="{plink toggle! id => $tool->id}" n:class="btn, btn-sm, $tool->is_active ? btn-outline-warning : btn-outline-success">
-                                {if $tool->is_active}Deaktivovat{else}Aktivovat{/if}
-                            </a>
+                            <form method="post" action="{plink toggle! id => $tool->id}" class="d-inline">
+                                <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                <button type="submit" n:class="btn, btn-sm, $tool->is_active ? btn-outline-warning : btn-outline-success"
+                                        data-confirm="{if $tool->is_active}Opravdu deaktivovat nástroj {$tool->name}?{else}Aktivovat nástroj {$tool->name}?{/if}">
+                                    {if $tool->is_active}Deaktivovat{else}Aktivovat{/if}
+                                </button>
+                            </form>
                         {/if}
                     </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="4" class="text-center text-secondary py-4">Žádné nástroje.</td>
                 </tr>
             {/foreach}
             </tbody>

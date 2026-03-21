@@ -1,4 +1,11 @@
-{block title}Nový job{/block}
+{block title}Nová úloha{/block}
+
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Úlohy</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nová úloha</li>
+</ol>
+{/block}
 
 {block actions}
 <a href="{plink default}" class="btn btn-outline-secondary">
@@ -13,7 +20,7 @@
             <div class="card-body">
                 {form createJobForm}
                     <div class="mb-3">
-                        <label class="form-label" for="{$form['tool_id']->htmlId}">Tool</label>
+                        <label class="form-label" for="{$form['tool_id']->htmlId}">Nástroj</label>
                         {input tool_id, class => 'form-select'}
                     </div>
                     <div class="mb-3">
@@ -48,7 +55,7 @@
                 <h3 class="card-title"><i class="ti ti-info-circle me-1"></i>Schéma</h3>
             </div>
             <div class="card-body" id="schema-info">
-                <p class="text-secondary">Vyber tool pro zobrazení schématu.</p>
+                <p class="text-secondary">Vyber nástroj pro zobrazení schématu.</p>
             </div>
         </div>
     </div>
@@ -65,7 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!schema || !schema.properties) return '{}';
         var obj = {};
         var props = schema.properties;
-        var required = schema.required || [];
         for (var key in props) {
             var prop = props[key];
             if (prop.type === 'string') {
@@ -85,16 +91,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderSchema(schema) {
         if (!schema || !schema.properties) {
-            schemaInfo.innerHTML = '<p class="text-secondary">Žádné schéma pro tento tool.</p>';
+            schemaInfo.innerHTML = '<p class="text-secondary">Žádné schéma pro tento nástroj.</p>';
             return;
         }
         var required = schema.required || [];
-        var html = '<table class="table table-sm"><thead><tr><th>Pole</th><th>Typ</th><th></th></tr></thead><tbody>';
+        var html = '<table class="table table-sm"><thead><tr><th>Pole</th><th>Typ</th><th>Popis</th><th></th></tr></thead><tbody>';
         for (var key in schema.properties) {
             var prop = schema.properties[key];
             var isReq = required.indexOf(key) !== -1;
+            var desc = prop.description || '';
             html += '<tr><td><code>' + key + '</code></td>';
             html += '<td class="text-secondary">' + (prop.type || '?') + '</td>';
+            html += '<td class="text-secondary small">' + desc + '</td>';
             html += '<td>' + (isReq ? '<span class="badge bg-red-lt">povinné</span>' : '<span class="badge bg-muted">volitelné</span>') + '</td>';
             html += '</tr>';
         }
@@ -105,10 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
     toolSelect.addEventListener('change', function() {
         var toolId = this.value;
         if (!toolId) {
-            schemaInfo.innerHTML = '<p class="text-secondary">Vyber tool pro zobrazení schématu.</p>';
+            schemaInfo.innerHTML = '<p class="text-secondary">Vyber nástroj pro zobrazení schématu.</p>';
             payloadField.value = '{}';
             return;
         }
+        schemaInfo.innerHTML = '<div class="d-flex align-items-center text-secondary"><div class="spinner-border spinner-border-sm me-2"></div>Načítám schéma…</div>';
         fetch(schemaUrl + (schemaUrl.indexOf('?') !== -1 ? '&' : '?') + 'tool_id=' + toolId)
             .then(function(r) { return r.json(); })
             .then(function(data) {

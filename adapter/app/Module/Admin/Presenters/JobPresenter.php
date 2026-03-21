@@ -28,6 +28,7 @@ class JobPresenter extends BasePresenter
 
 	public function renderDefault(): void
 	{
+		$countQuery = $this->jobRepository->getTable();
 		$query = $this->jobRepository->getTable()
 			->order('created_at DESC');
 
@@ -35,19 +36,32 @@ class JobPresenter extends BasePresenter
 		$status = $this->getParameter('status');
 		if ($status) {
 			$query->where('status', $status);
+			$countQuery->where('status', $status);
 		}
 
 		$clientId = $this->getParameter('client_id');
 		if ($clientId) {
 			$query->where('client_id', (int) $clientId);
+			$countQuery->where('client_id', (int) $clientId);
 		}
 
 		$toolId = $this->getParameter('tool_id');
 		if ($toolId) {
 			$query->where('tool_id', (int) $toolId);
+			$countQuery->where('tool_id', (int) $toolId);
 		}
 
-		$this->template->jobs = $query->limit(100)->fetchAll();
+		$page = max(1, (int) ($this->getParameter('page') ?? 1));
+		$itemsPerPage = 50;
+		$totalCount = $countQuery->count('*');
+
+		$paginator = new \Nette\Utils\Paginator;
+		$paginator->setItemsPerPage($itemsPerPage);
+		$paginator->setPage($page);
+		$paginator->setItemCount($totalCount);
+
+		$this->template->jobs = $query->limit($paginator->getLength(), $paginator->getOffset())->fetchAll();
+		$this->template->paginator = $paginator;
 		$this->template->clients = $this->clientRepository->getTable()->fetchPairs('id', 'name');
 		$this->template->tools = $this->toolRepository->getTable()->fetchPairs('id', 'name');
 		$this->template->filterStatus = $status;
@@ -185,10 +199,12 @@ class JobPresenter extends BasePresenter
 
 
 	/**
-	 * Force-cancel a stuck processing/pending job.
+	 * Force-cancel a stuck processing/pending job (POST only).
 	 */
-	public function actionCancel(string $id): void
+	public function handleCancel(string $id): void
 	{
+		$this->requirePost();
+
 		$job = $this->jobRepository->findById($id);
 		if (!$job) {
 			$this->error('Job not found');
@@ -219,10 +235,12 @@ class JobPresenter extends BasePresenter
 
 
 	/**
-	 * Retry a failed/timeout job by creating a new one with the same parameters.
+	 * Retry a failed/timeout job by creating a new one with the same parameters (POST only).
 	 */
-	public function actionRetry(string $id): void
+	public function handleRetry(string $id): void
 	{
+		$this->requirePost();
+
 		$job = $this->jobRepository->findById($id);
 		if (!$job) {
 			$this->error('Job not found');
@@ -251,14 +269,6 @@ class JobPresenter extends BasePresenter
 
 		$toolName = $job->ref('tools', 'tool_id')?->name ?? '?';
 		$this->flashMessage("Job $toolName zopakován, nový job ID: {$newJob->id}", 'success');
-
-		if ($this->getParameter('from') === 'list') {
-			$this->redirect('default', [
-				'status' => $this->getParameter('status'),
-				'client_id' => $this->getParameter('client_id'),
-				'tool_id' => $this->getParameter('tool_id'),
-			]);
-		}
 
 		$this->redirect('detail', $newJob->id);
 	}

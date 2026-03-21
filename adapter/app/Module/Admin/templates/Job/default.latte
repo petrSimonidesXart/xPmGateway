@@ -1,8 +1,8 @@
-{block title}Joby{/block}
+{block title}Úlohy{/block}
 
 {block actions}
 <a href="{plink create}" class="btn btn-primary">
-    <i class="ti ti-plus me-1"></i>Nový job
+    <i class="ti ti-plus me-1"></i>Nová úloha
 </a>
 {/block}
 
@@ -28,7 +28,7 @@
             </div>
             <div class="col-auto">
                 <select name="tool_id" class="form-select form-select-sm">
-                    <option value="">Všechny tooly</option>
+                    <option value="">Všechny nástroje</option>
                     {foreach $tools as $tid => $tname}
                         <option value="{$tid}" {if $filterToolId == $tid}selected{/if}>{$tname}</option>
                     {/foreach}
@@ -39,6 +39,15 @@
                     <i class="ti ti-filter me-1"></i>Filtrovat
                 </button>
             </div>
+            {var $activeFilterCount = ($filterStatus ? 1 : 0) + ($filterClientId ? 1 : 0) + ($filterToolId ? 1 : 0)}
+            {if $activeFilterCount > 0}
+            <div class="col-auto">
+                <a href="{plink default}" class="btn btn-sm btn-outline-secondary">
+                    <i class="ti ti-x me-1"></i>Reset filtrů
+                    <span class="badge bg-primary ms-1">{$activeFilterCount}</span>
+                </a>
+            </div>
+            {/if}
         </form>
     </div>
     <div class="table-responsive">
@@ -46,10 +55,10 @@
             <thead>
                 <tr>
                     <th>Job ID</th>
-                    <th>Tool</th>
+                    <th>Nástroj</th>
                     <th>Klient</th>
                     <th>Status</th>
-                    <th title="Automatické pokusy při timeoutu (ne při selhání). Manuální retry z admin UI vytvoří nový job s čistým počítadlem.">Pokusů <i class="ti ti-info-circle text-secondary"></i></th>
+                    <th data-bs-toggle="tooltip" data-bs-placement="top" title="Automatické pokusy při timeoutu (ne při selhání). Manuální retry z admin UI vytvoří nový job s čistým počítadlem.">Pokusů <i class="ti ti-info-circle text-secondary"></i></th>
                     <th>Vytvořen</th>
                     <th>Dokončen</th>
                     <th class="w-1"></th>
@@ -58,7 +67,7 @@
             <tbody>
             {foreach $jobs as $job}
                 <tr>
-                    <td><a href="{plink detail $job->id}">{$job->id|truncate(12)}</a></td>
+                    <td><a href="{plink detail $job->id}"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></a></td>
                     <td>{$job->ref('tools', 'tool_id')?->name}</td>
                     <td>{$job->ref('clients', 'client_id')?->name}</td>
                     <td><span class="badge badge-{$job->status}">{$job->status}</span></td>
@@ -67,20 +76,62 @@
                     <td class="text-secondary">{if $job->finished_at}{$job->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</td>
                     <td class="text-nowrap">
                         {if in_array($job->status, ['pending', 'processing'])}
-                        <a href="{plink cancel $job->id}" class="btn btn-sm btn-outline-danger" title="Zrušit" onclick="return confirm('Zrušit?')">
-                            <i class="ti ti-x"></i>
-                        </a>
+                        <form method="post" action="{plink cancel! id => $job->id}" class="d-inline">
+                            <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Zrušit"
+                                    data-confirm="Opravdu chcete zrušit tuto úlohu?">
+                                <i class="ti ti-x"></i>
+                            </button>
+                        </form>
                         {/if}
                         {if in_array($job->status, ['failed', 'timeout'])}
-                        <a href="{plink retry $job->id, from => list, status => $filterStatus, client_id => $filterClientId, tool_id => $filterToolId}" class="btn btn-sm btn-outline-warning" title="Opakovat job">
-                            <i class="ti ti-refresh"></i>
-                        </a>
+                        <form method="post" action="{plink retry! id => $job->id}" class="d-inline">
+                            <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Opakovat úlohu">
+                                <i class="ti ti-refresh"></i>
+                            </button>
+                        </form>
                         {/if}
+                    </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="8" class="text-center text-secondary py-4">
+                        <i class="ti ti-mood-empty" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Žádné úlohy{if $activeFilterCount > 0} pro zvolené filtry{/if}.</p>
                     </td>
                 </tr>
             {/foreach}
             </tbody>
         </table>
     </div>
+    {if $paginator->getPageCount() > 1}
+    <div class="card-footer d-flex align-items-center">
+        <p class="m-0 text-secondary">
+            Zobrazeno {$paginator->getOffset() + 1}–{min($paginator->getOffset() + $paginator->getLength(), $paginator->getItemCount())} z {$paginator->getItemCount()}
+        </p>
+        <ul class="pagination m-0 ms-auto">
+            <li n:class="page-item, $paginator->isFirst() ? disabled">
+                <a class="page-link" href="{plink default, status => $filterStatus, client_id => $filterClientId, tool_id => $filterToolId, page => $paginator->getPage() - 1}">
+                    <i class="ti ti-chevron-left"></i>
+                </a>
+            </li>
+            {for $p = 1; $p <= $paginator->getPageCount(); $p++}
+                {if $p <= 3 || $p > $paginator->getPageCount() - 3 || abs($p - $paginator->getPage()) <= 1}
+                <li n:class="page-item, $p === $paginator->getPage() ? active">
+                    <a class="page-link" href="{plink default, status => $filterStatus, client_id => $filterClientId, tool_id => $filterToolId, page => $p}">{$p}</a>
+                </li>
+                {elseif $p === 4 || $p === $paginator->getPageCount() - 3}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {/if}
+            {/for}
+            <li n:class="page-item, $paginator->isLast() ? disabled">
+                <a class="page-link" href="{plink default, status => $filterStatus, client_id => $filterClientId, tool_id => $filterToolId, page => $paginator->getPage() + 1}">
+                    <i class="ti ti-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </div>
+    {/if}
 </div>
 {/block}

@@ -108,6 +108,7 @@ class ServiceAccountPresenter extends BasePresenter
 
 	public function handleDelete(int $id): void
 	{
+		$this->requirePost();
 		$this->requireAdmin();
 
 		$account = $this->serviceAccountRepository->findById($id);

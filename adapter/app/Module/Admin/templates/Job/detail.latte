@@ -1,15 +1,28 @@
-{block title}Job {$job->id}{/block}
+{block title}Úloha {$job->id|truncate(12, '…')}{/block}
+
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Úlohy</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></li>
+</ol>
+{/block}
 
 {block actions}
 {if in_array($job->status, ['pending', 'processing'])}
-<a href="{plink cancel $job->id}" class="btn btn-outline-danger me-2" onclick="return confirm('Opravdu zrušit tento job?')">
-    <i class="ti ti-x me-1"></i>Zrušit
-</a>
+<form method="post" action="{plink cancel! id => $job->id}" class="d-inline me-2">
+    <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+    <button type="submit" class="btn btn-outline-danger" data-confirm="Opravdu zrušit tuto úlohu?">
+        <i class="ti ti-x me-1"></i>Zrušit
+    </button>
+</form>
 {/if}
 {if in_array($job->status, ['failed', 'timeout'])}
-<a href="{plink retry $job->id}" class="btn btn-outline-warning me-2">
-    <i class="ti ti-refresh me-1"></i>Opakovat job
-</a>
+<form method="post" action="{plink retry! id => $job->id}" class="d-inline me-2">
+    <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+    <button type="submit" class="btn btn-outline-warning">
+        <i class="ti ti-refresh me-1"></i>Opakovat úlohu
+    </button>
+</form>
 {/if}
 <a href="{plink default}" class="btn btn-outline-secondary">
     <i class="ti ti-arrow-left me-1"></i>Zpět na seznam
@@ -21,7 +34,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Informace o jobu</h3>
+                <h3 class="card-title">Informace o úloze</h3>
             </div>
             <div class="card-body">
                 <div class="datagrid">
@@ -30,7 +43,7 @@
                         <div class="datagrid-content"><code>{$job->id}</code></div>
                     </div>
                     <div class="datagrid-item">
-                        <div class="datagrid-title">Tool</div>
+                        <div class="datagrid-title">Nástroj</div>
                         <div class="datagrid-content">{$job->ref('tools', 'tool_id')?->name}</div>
                     </div>
                     <div class="datagrid-item">
@@ -63,9 +76,9 @@
                     </div>
                     {if $retryOf}
                     <div class="datagrid-item">
-                        <div class="datagrid-title">Opakování jobu</div>
+                        <div class="datagrid-title">Opakování úlohy</div>
                         <div class="datagrid-content">
-                            <a href="{plink detail $retryOf->id}"><i class="ti ti-arrow-back-up me-1"></i>{$retryOf->id|truncate(12, '…')}</a>
+                            <a href="{plink detail $retryOf->id}"><i class="ti ti-arrow-back-up me-1"></i><code title="{$retryOf->id}">{$retryOf->id|truncate(12, '…')}</code></a>
                             <span class="badge badge-{$retryOf->status} ms-1">{$retryOf->status}</span>
                         </div>
                     </div>
@@ -74,7 +87,7 @@
                     <div class="datagrid-item">
                         <div class="datagrid-title">Opakován jako</div>
                         <div class="datagrid-content">
-                            <a href="{plink detail $retriedAs->id}"><i class="ti ti-refresh me-1"></i>{$retriedAs->id|truncate(12, '…')}</a>
+                            <a href="{plink detail $retriedAs->id}"><i class="ti ti-refresh me-1"></i><code title="{$retriedAs->id}">{$retriedAs->id|truncate(12, '…')}</code></a>
                             <span class="badge badge-{$retriedAs->status} ms-1">{$retriedAs->status}</span>
                         </div>
                     </div>
@@ -89,7 +102,7 @@
                 <h3 class="card-title">Payload</h3>
             </div>
             <div class="card-body">
-                <pre class="mb-0"><code>{$job->payload}</code></pre>
+                <pre class="mb-0 pre-scroll"><code>{$job->payload}</code></pre>
             </div>
         </div>
     </div>
@@ -100,7 +113,7 @@
                 <h3 class="card-title">Výsledek</h3>
             </div>
             <div class="card-body">
-                <pre class="mb-0"><code>{$job->result}</code></pre>
+                <pre class="mb-0 pre-scroll"><code>{$job->result}</code></pre>
             </div>
         </div>
     </div>
@@ -114,12 +127,35 @@
                 </h3>
             </div>
             <div class="card-body">
-                <pre class="mb-0 text-danger"><code>{$job->error_message}</code></pre>
+                <pre class="mb-0 pre-scroll text-danger"><code>{$job->error_message}</code></pre>
             </div>
         </div>
     </div>
     {/if}
     {if $artifacts}
+    {var $videoArtifacts = array_filter($artifacts, fn($a) => str_starts_with($a->mime_type, 'video/'))}
+    {var $otherArtifacts = array_filter($artifacts, fn($a) => !str_starts_with($a->mime_type, 'video/'))}
+    {if $videoArtifacts}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-video me-1"></i>Video záznam</h3>
+            </div>
+            <div class="card-body">
+                {foreach $videoArtifacts as $artifact}
+                <video controls class="w-100 rounded" style="max-height: 480px; background: #000;">
+                    <source src="{plink artifactView $artifact->id}" type="{$artifact->mime_type}">
+                </video>
+                <div class="mt-2 text-secondary small">
+                    {$artifact->filename} · {=$artifact->size_bytes / 1024|number:1} KB
+                    · <a href="{plink artifactDownload $artifact->id}"><i class="ti ti-download me-1"></i>Stáhnout</a>
+                </div>
+                {/foreach}
+            </div>
+        </div>
+    </div>
+    {/if}
+    {if $otherArtifacts}
     <div class="col-12">
         <div class="card">
             <div class="card-header">
@@ -137,7 +173,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {foreach $artifacts as $artifact}
+                    {foreach $otherArtifacts as $artifact}
                         <tr>
                             <td><i class="ti ti-file me-1"></i>{$artifact->filename}</td>
                             <td class="text-secondary">{$artifact->mime_type}</td>
@@ -149,21 +185,13 @@
                                 </a>
                             </td>
                         </tr>
-                        {if str_starts_with($artifact->mime_type, 'video/')}
-                        <tr>
-                            <td colspan="5" class="p-3">
-                                <video controls class="w-100" style="max-height: 480px; background: #000;">
-                                    <source src="{plink artifactView $artifact->id}" type="{$artifact->mime_type}">
-                                </video>
-                            </td>
-                        </tr>
-                        {/if}
                     {/foreach}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+    {/if}
     {/if}
     {if $screenshots}
     <div class="col-12">
@@ -174,13 +202,15 @@
             <div class="card-body">
                 <div class="row row-cards">
                     {foreach $screenshots as $screenshot}
-                        <div class="col-md-4">
-                            <div class="card">
-                                <img src="{plink screenshot $job->id, $screenshot['file']}" class="card-img-top" alt="{$screenshot['step']}">
-                                <div class="card-body p-2">
-                                    <small class="text-secondary">{$screenshot['step']}</small>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <a href="{plink screenshot $job->id, $screenshot['file']}" target="_blank" class="d-block">
+                                <div class="card">
+                                    <img src="{plink screenshot $job->id, $screenshot['file']}" class="card-img-top" alt="{$screenshot['step']}">
+                                    <div class="card-body p-2">
+                                        <small class="text-secondary">{$screenshot['step']}</small>
+                                    </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                     {/foreach}
                 </div>

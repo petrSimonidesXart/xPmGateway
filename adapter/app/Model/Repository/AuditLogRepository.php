@@ -45,4 +45,30 @@ class AuditLogRepository extends BaseRepository
 
 		return $query->order('created_at DESC')->limit($limit, $offset);
 	}
+
+
+	public function countFiltered(
+		?int $clientId = null,
+		?string $action = null,
+		?\DateTime $dateFrom = null,
+		?\DateTime $dateTo = null,
+	): int
+	{
+		$query = $this->getTable();
+
+		if ($clientId !== null) {
+			$query->where('client_id', $clientId);
+		}
+		if ($action !== null) {
+			$query->where('action', $action);
+		}
+		if ($dateFrom !== null) {
+			$query->where('created_at >= ?', $dateFrom);
+		}
+		if ($dateTo !== null) {
+			$query->where('created_at <= ?', $dateTo);
+		}
+
+		return $query->count('*');
+	}
 }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{ifset title}{include title} | {/ifset}PM Gateway Admin</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet">
     <style>
@@ -43,6 +44,11 @@
             padding-bottom: 4px;
         }
         #ws-details a { color: #fff; }
+
+        pre.pre-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="page">
@@ -78,19 +84,19 @@
                     <li class="nav-item">
                         <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:Tool:*') ? active" href="{plink :Admin:Tool:default}">
                             <span class="nav-link-icon"><i class="ti ti-tool"></i></span>
-                            <span class="nav-link-title">Tooly</span>
+                            <span class="nav-link-title">Nástroje</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:Job:*') ? active" href="{plink :Admin:Job:default}">
                             <span class="nav-link-icon"><i class="ti ti-list-check"></i></span>
-                            <span class="nav-link-title">Joby</span>
+                            <span class="nav-link-title">Úlohy</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:AuditLog:*') ? active" href="{plink :Admin:AuditLog:default}">
                             <span class="nav-link-icon"><i class="ti ti-file-text"></i></span>
-                            <span class="nav-link-title">Audit Log</span>
+                            <span class="nav-link-title">Audit log</span>
                         </a>
                     </li>
                     {if $isAdmin}
@@ -119,12 +125,14 @@
     </aside>
     <div class="page-wrapper">
         <div class="worker-status-bar ws-unknown" id="worker-status-bar"
+             aria-expanded="false" aria-controls="ws-details"
              data-url="{plink :Admin:Dashboard:workerStatus}"
              data-job-url="{plink :Admin:Job:detail '__ID__'}">
             <div class="container-xl d-flex align-items-center">
                 <span class="ws-dot"></span>
                 <span class="ms-2" id="ws-text">Worker: …</span>
                 <span class="ms-2 opacity-75 d-none" id="ws-detail"></span>
+                <span class="ms-2 opacity-50 d-none" id="ws-stale" data-bs-toggle="tooltip" title="Čas od posledního obnovení"></span>
                 <button class="btn btn-link btn-sm ms-auto p-0 text-white opacity-75" id="ws-toggle" title="Detail">
                     <i class="ti ti-chevron-down" id="ws-toggle-icon"></i>
                 </button>
@@ -137,6 +145,11 @@
             <div class="container-xl">
                 <div class="row g-2 align-items-center">
                     <div class="col">
+                        {ifset breadcrumb}
+                        <div class="mb-1">
+                            {include breadcrumb}
+                        </div>
+                        {/ifset}
                         <h2 class="page-title">{ifset title}{include title}{/ifset}</h2>
                     </div>
                     {ifset actions}
@@ -150,15 +163,52 @@
         <div class="page-body">
             <div class="container-xl">
                 {foreach $flashes as $flash}
-                    <div n:class="alert, $flash->type === 'warning' ? alert-warning : alert-success, alert-dismissible" role="alert">
+                    {var $alertClass = match($flash->type) {
+                        'error', 'danger' => 'alert-danger',
+                        'warning' => 'alert-warning',
+                        'info' => 'alert-info',
+                        default => 'alert-success',
+                    }}
+                    {var $alertIcon = match($flash->type) {
+                        'error', 'danger' => 'ti-alert-circle',
+                        'warning' => 'ti-alert-triangle',
+                        'info' => 'ti-info-circle',
+                        default => 'ti-check',
+                    }}
+                    <div class="alert {$alertClass} alert-dismissible" role="alert">
                         <div class="d-flex">
-                            <div><i n:class="ti, me-2, $flash->type === 'warning' ? ti-alert-triangle : ti-check"></i></div>
+                            <div><i class="ti {$alertIcon} me-2"></i></div>
                             <div>{$flash->message}</div>
                         </div>
                         <a class="btn-close" data-bs-dismiss="alert" aria-label="Close"></a>
                     </div>
                 {/foreach}
                 {include content}
+            </div>
+        </div>
+    </div>
+    {* Confirm modal for destructive actions *}
+    <div class="modal modal-blur fade" id="confirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-status bg-danger"></div>
+                <div class="modal-body text-center py-4">
+                    <i class="ti ti-alert-triangle mb-2 text-danger" style="font-size: 3rem;"></i>
+                    <h3>Potvrdit akci</h3>
+                    <p class="text-secondary" id="confirmModalMessage">Opravdu chcete provést tuto akci?</p>
+                </div>
+                <div class="modal-footer">
+                    <div class="w-100">
+                        <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn w-100" data-bs-dismiss="modal">Zrušit</button>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn btn-danger w-100" id="confirmModalSubmit">Potvrdit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -185,19 +235,49 @@
             const el = document.createElement('div');
             el.className = 'toast show';
             el.setAttribute('role', 'alert');
-            el.innerHTML = `
-                <div class="toast-header">
-                    <span class="avatar avatar-xs ${color} me-2"><i class="ti ${icon} text-white"></i></span>
-                    <strong class="me-auto">${label}</strong>
-                    <small class="text-secondary">${job.client_name}</small>
-                    <button type="button" class="ms-2 btn-close" data-bs-dismiss="toast"></button>
-                </div>
-                <div class="toast-body">
-                    <a href="${JOB_DETAIL_URL.replace('__ID__', job.id)}" class="text-reset">
-                        <strong>${job.tool_name}</strong>${detail}
-                    </a>
-                </div>`;
-            document.getElementById('toast-container').appendChild(el);
+
+            const header = document.createElement('div');
+            header.className = 'toast-header';
+
+            const avatar = document.createElement('span');
+            avatar.className = 'avatar avatar-xs ' + color + ' me-2';
+            const avatarIcon = document.createElement('i');
+            avatarIcon.className = 'ti ' + icon + ' text-white';
+            avatar.appendChild(avatarIcon);
+            header.appendChild(avatar);
+
+            const strong = document.createElement('strong');
+            strong.className = 'me-auto';
+            strong.textContent = label;
+            header.appendChild(strong);
+
+            const small = document.createElement('small');
+            small.className = 'text-secondary';
+            small.textContent = job.client_name;
+            header.appendChild(small);
+
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'ms-2 btn-close';
+            closeBtn.setAttribute('data-bs-dismiss', 'toast');
+            header.appendChild(closeBtn);
+
+            const body = document.createElement('div');
+            body.className = 'toast-body';
+            const bodyLink = document.createElement('a');
+            bodyLink.href = JOB_DETAIL_URL.replace('__ID__', job.id);
+            bodyLink.className = 'text-reset';
+            const bodyStrong = document.createElement('strong');
+            bodyStrong.textContent = job.tool_name;
+            bodyLink.appendChild(bodyStrong);
+            if (detail) {
+                bodyLink.appendChild(document.createTextNode(detail));
+            }
+            body.appendChild(bodyLink);
+
+            el.appendChild(header);
+            el.appendChild(body);
+            container.appendChild(el);
             const toast = new bootstrap.Toast(el, {autohide: true, delay: 8000});
             toast.show();
             el.addEventListener('hidden.bs.toast', () => el.remove());
@@ -217,7 +297,6 @@
                 if (jobs.length > 0) {
                     since = jobs[0].finished_at;
                     localStorage.setItem('pmg_since', since);
-                    // Keep shownIds bounded
                     const arr = [...shownIds];
                     if (arr.length > 200) {
                         const trimmed = arr.slice(-100);
@@ -240,15 +319,18 @@
         var JOB_URL = bar.dataset.jobUrl;
         var textEl = document.getElementById('ws-text');
         var detailEl = document.getElementById('ws-detail');
+        var staleEl = document.getElementById('ws-stale');
         var details = document.getElementById('ws-details');
         var detailsContent = document.getElementById('ws-details-content');
         var toggleBtn = document.getElementById('ws-toggle');
         var toggleIcon = document.getElementById('ws-toggle-icon');
         var expanded = false;
+        var lastPollTime = null;
 
         toggleBtn.addEventListener('click', function() {
             expanded = !expanded;
             details.style.display = expanded ? 'block' : 'none';
+            bar.setAttribute('aria-expanded', expanded ? 'true' : 'false');
             toggleIcon.className = expanded ? 'ti ti-chevron-up' : 'ti ti-chevron-down';
         });
 
@@ -285,31 +367,113 @@
                 detailEl.classList.remove('d-none');
             }
 
-            var html = '';
-            if (d.started_at) html += '<div>Spuštěn od: ' + ts(d.started_at) + '</div>';
-            if (d.last_seen_at) html += '<div>Naposledy viděn: ' + ts(d.last_seen_at) + '</div>';
-            if (d.uptime_seconds) html += '<div>Uptime: ' + dur(d.uptime_seconds) + '</div>';
-            if (d.job) {
-                html += '<div class="mt-1 pt-1" style="border-top: 1px solid rgba(255,255,255,0.25);">';
-                html += '<div>Job: <a href="' + JOB_URL.replace('__ID__', d.job.id) + '">' + d.job.id.substring(0, 8) + '…</a></div>';
-                html += '<div>Tool: ' + d.job.tool_name + '</div>';
-                html += '<div>Klient: ' + d.job.client_name + '</div>';
-                html += '<div>Trvání: ' + dur(d.job.duration_seconds) + '</div>';
-                html += '</div>';
+            // Build detail content safely with textContent (no innerHTML XSS)
+            detailsContent.textContent = '';
+            if (d.started_at) {
+                var div1 = document.createElement('div');
+                div1.textContent = 'Spuštěn od: ' + ts(d.started_at);
+                detailsContent.appendChild(div1);
             }
-            detailsContent.innerHTML = html;
+            if (d.last_seen_at) {
+                var div2 = document.createElement('div');
+                div2.textContent = 'Naposledy viděn: ' + ts(d.last_seen_at);
+                detailsContent.appendChild(div2);
+            }
+            if (d.uptime_seconds) {
+                var div3 = document.createElement('div');
+                div3.textContent = 'Uptime: ' + dur(d.uptime_seconds);
+                detailsContent.appendChild(div3);
+            }
+            if (d.job) {
+                var sep = document.createElement('div');
+                sep.className = 'mt-1 pt-1';
+                sep.style.borderTop = '1px solid rgba(255,255,255,0.25)';
+
+                var jobDiv = document.createElement('div');
+                var jobLink = document.createElement('a');
+                jobLink.href = JOB_URL.replace('__ID__', d.job.id);
+                jobLink.textContent = d.job.id.substring(0, 12) + '…';
+                jobDiv.textContent = 'Job: ';
+                jobDiv.appendChild(jobLink);
+                sep.appendChild(jobDiv);
+
+                var toolDiv = document.createElement('div');
+                toolDiv.textContent = 'Tool: ' + d.job.tool_name;
+                sep.appendChild(toolDiv);
+
+                var clientDiv = document.createElement('div');
+                clientDiv.textContent = 'Klient: ' + d.job.client_name;
+                sep.appendChild(clientDiv);
+
+                var durDiv = document.createElement('div');
+                durDiv.textContent = 'Trvání: ' + dur(d.job.duration_seconds);
+                sep.appendChild(durDiv);
+
+                detailsContent.appendChild(sep);
+            }
+        }
+
+        function updateStale() {
+            if (!lastPollTime) return;
+            var ago = Math.round((Date.now() - lastPollTime) / 1000);
+            if (ago >= 10) {
+                staleEl.textContent = '· ' + ago + 's ago';
+                staleEl.classList.remove('d-none');
+            } else {
+                staleEl.classList.add('d-none');
+            }
         }
 
         async function pollStatus() {
             try {
                 var res = await fetch(STATUS_URL);
-                if (res.ok) render(await res.json());
+                if (res.ok) {
+                    render(await res.json());
+                    lastPollTime = Date.now();
+                    staleEl.classList.add('d-none');
+                }
             } catch (e) { /* ignore */ }
         }
 
         setInterval(pollStatus, 10000);
+        setInterval(updateStale, 5000);
         pollStatus();
     })();
+
+    // Confirm modal for destructive POST actions
+    (function() {
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-confirm]');
+            if (!btn) return;
+            e.preventDefault();
+            var form = btn.closest('form');
+            if (!form) return;
+            var msg = btn.getAttribute('data-confirm');
+            document.getElementById('confirmModalMessage').textContent = msg;
+            var modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            var submitBtn = document.getElementById('confirmModalSubmit');
+            var handler = function() {
+                submitBtn.removeEventListener('click', handler);
+                form.submit();
+            };
+            submitBtn.addEventListener('click', handler);
+            modal.show();
+        });
+    })();
+
+    // Initialize Bootstrap tooltips
+    (function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(el) { return new bootstrap.Tooltip(el); });
+    })();
+
+    // Keyboard shortcut: Alt+N for new job
+    document.addEventListener('keydown', function(e) {
+        if (e.altKey && e.key === 'n') {
+            var newJobLink = document.querySelector('a[href*="jobs/create"]');
+            if (newJobLink) { e.preventDefault(); newJobLink.click(); }
+        }
+    });
     </script>
 </body>
 </html>

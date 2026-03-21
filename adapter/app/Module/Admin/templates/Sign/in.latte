@@ -5,10 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Přihlášení | PM Gateway Admin</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet">
 </head>
-<body class="d-flex flex-column bg-white">
+<body class="d-flex flex-column" style="background: var(--tblr-body-bg);">
     <div class="page page-center">
         <div class="container container-tight py-4">
             <div class="text-center mb-4">
@@ -19,12 +20,29 @@
                     <h2 class="h2 text-center mb-4">Přihlášení</h2>
 
                     {foreach $flashes as $flash}
-                        <div class="alert alert-danger">
+                        {var $alertClass = match($flash->type) {
+                            'error', 'danger' => 'alert-danger',
+                            'warning' => 'alert-warning',
+                            default => 'alert-success',
+                        }}
+                        <div class="alert {$alertClass}">
                             <i class="ti ti-alert-circle me-1"></i>{$flash->message}
                         </div>
                     {/foreach}
 
-                    {control signInForm}
+                    {form signInForm}
+                        <div class="mb-3">
+                            <label class="form-label" for="{$form['username']->htmlId}">Uživatelské jméno</label>
+                            {input username, class => 'form-control', placeholder => 'Zadejte uživatelské jméno', autocomplete => 'username'}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="{$form['password']->htmlId}">Heslo</label>
+                            {input password, class => 'form-control', placeholder => 'Zadejte heslo', autocomplete => 'current-password'}
+                        </div>
+                        <div class="form-footer">
+                            {input send, class => 'btn btn-primary w-100'}
+                        </div>
+                    {/form}
                 </div>
             </div>
         </div>

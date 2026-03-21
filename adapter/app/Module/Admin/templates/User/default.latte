@@ -1,4 +1,4 @@
-{block title}Admin Uživatelé{/block}
+{block title}Uživatelé{/block}
 
 {block actions}
 <a href="{plink create}" class="btn btn-primary">
@@ -33,8 +33,12 @@
                     </td>
                     <td class="text-secondary">{if $adminUser->last_login_at}{$adminUser->last_login_at|date:'d.m.Y H:i'}{else}—{/if}</td>
                     <td>
-                        <a href="{plink edit $adminUser->id}" class="btn btn-sm">Upravit</a>
+                        <a href="{plink edit $adminUser->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
                     </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="5" class="text-center text-secondary py-4">Žádní uživatelé.</td>
                 </tr>
             {/foreach}
             </tbody>

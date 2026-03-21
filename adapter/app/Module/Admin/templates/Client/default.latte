@@ -36,15 +36,18 @@
                     <td class="text-secondary">{$client->created_at|date:'d.m.Y'}</td>
                     <td>
                         {if $isAdmin}
-                            <span class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle align-text-top" data-bs-toggle="dropdown">Akce</button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{plink edit $client->id}">Upravit</a>
-                                    <a class="dropdown-item" href="{plink :Admin:Token:default $client->id}">Tokeny</a>
-                                </div>
-                            </span>
+                            <div class="btn-list">
+                                <a href="{plink edit $client->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
+                                <a href="{plink :Admin:Token:default $client->id}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="ti ti-key me-1"></i>Tokeny
+                                </a>
+                            </div>
                         {/if}
                     </td>
+                </tr>
+            {else}
+                <tr>
+                    <td colspan="5" class="text-center text-secondary py-4">Žádní klienti.</td>
                 </tr>
             {/foreach}
             </tbody>
