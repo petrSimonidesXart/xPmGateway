@@ -4,6 +4,7 @@
     "properties": {
         "path_info": {
             "type": "string",
+            "minLength": 1,
             "description": "Cesta k podúkolu (např. projects/xxx/tasks/1/subtasks/123)"
         },
         "fields": {

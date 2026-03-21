@@ -72,9 +72,9 @@
                     <td>
                         <a href="{plink detail $job->id}"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></a>
                         {if count($children) > 0}
-                            <button class="btn btn-sm btn-ghost-secondary p-0 ms-1 chain-toggle" data-chain="{$job->id}" data-bs-toggle="tooltip" title="{count($children)} navazující">
-                                <span class="badge bg-secondary">{count($children)}</span>
-                                <i class="ti ti-chevron-right ti-xs chain-icon"></i>
+                            <button class="btn btn-sm p-0 ms-1 chain-toggle text-secondary" data-chain="{$job->id}" title="{count($children)} navazující">
+                                <i class="ti ti-chevron-right chain-icon"></i>
+                                <span class="badge bg-secondary ms-0">{count($children)}</span>
                             </button>
                         {/if}
                     </td>
@@ -169,7 +169,7 @@ document.addEventListener('click', function(e) {
     var icon = btn.querySelector('.chain-icon');
     var visible = rows[0] && rows[0].style.display !== 'none';
     rows.forEach(function(row) { row.style.display = visible ? 'none' : ''; });
-    if (icon) icon.className = visible ? 'ti ti-chevron-right ti-xs chain-icon' : 'ti ti-chevron-down ti-xs chain-icon';
+    if (icon) icon.className = visible ? 'ti ti-chevron-right chain-icon' : 'ti ti-chevron-down chain-icon';
 });
 </script>
 {/block}

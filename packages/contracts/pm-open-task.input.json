@@ -4,6 +4,7 @@
     "properties": {
         "query": {
             "type": "string",
+            "minLength": 1,
             "description": "Název nebo část názvu úkolu k vyhledání"
         }
     },

@@ -4,6 +4,7 @@
     "properties": {
         "text": {
             "type": "string",
+            "minLength": 1,
             "description": "Text komentáře"
         }
     },
