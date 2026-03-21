@@ -8,44 +8,54 @@ Integration layer between AI assistants (MCP clients) and a legacy PM system via
 MCP Clients → MCP Gateway (PHP/Nette) → Job Queue (MariaDB) → Worker (Node.js/Playwright) → Legacy PM
 ```
 
-## Quick Start
+## Quick Start (DDEV)
 
-### 1. Adapter (PHP)
+### 1. DDEV Setup
+
+```bash
+ddev start
+```
+
+### 2. Adapter (PHP)
 
 ```bash
 cd adapter
 cp .env.template .env        # edit with your values
 cp config/local.neon.template config/local.neon
-composer install
+ddev composer install -d adapter
 ```
 
 Create the database and run migrations:
 
 ```bash
-mysql -u root -e "CREATE DATABASE pm_gateway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-# Run migration via nextras/migrations or manually:
-mysql -u root pm_gateway < migrations/001-initial-schema.sql
+ddev exec mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS pm_gateway CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+ddev exec mysql -uroot -proot pm_gateway < adapter/migrations/001-initial-schema.sql
+ddev exec mysql -uroot -proot pm_gateway < adapter/migrations/002-job-artifacts.sql
+ddev exec mysql -uroot -proot pm_gateway < adapter/migrations/003-worker-heartbeats.sql
+ddev exec mysql -uroot -proot pm_gateway < adapter/migrations/004-job-retry-reference.sql
 ```
 
 Default admin login: `admin` / `admin123` (change immediately).
 
-### 2. Worker (Node.js)
+### 3. Worker (Node.js)
 
 ```bash
 cd worker
 cp .env.template .env        # edit with your values
-npm install
-npx playwright install chromium
-npm run dev                  # development
+ddev exec bash -c "cd /var/www/html/worker && npm install"
+ddev exec npx playwright install chromium
+ddev exec npx playwright install-deps chromium
+ddev exec bash -c "cd /var/www/html/worker && npm run dev"    # development
 # or
-npm run build && npm start   # production
+ddev exec bash -c "cd /var/www/html/worker && npm run build && npm start"  # production
 ```
 
-### 3. Apache Configuration
+### Without DDEV (Apache)
 
 The root `.htaccess` routes all requests to `adapter/www/`. Make sure:
 - `mod_rewrite` is enabled
 - `AllowOverride All` is set for the document root
+- For Worker: install Playwright browsers and system deps locally (`npx playwright install chromium && npx playwright install-deps chromium`)
 
 ## Project Structure
 

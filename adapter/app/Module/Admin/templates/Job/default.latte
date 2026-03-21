@@ -1,5 +1,11 @@
 {block title}Joby{/block}
 
+{block actions}
+<a href="{plink create}" class="btn btn-primary">
+    <i class="ti ti-plus me-1"></i>Nový job
+</a>
+{/block}
+
 {block content}
 <div class="card">
     <div class="card-body border-bottom py-3">
@@ -43,7 +49,7 @@
                     <th>Tool</th>
                     <th>Klient</th>
                     <th>Status</th>
-                    <th>Pokusů</th>
+                    <th title="Automatické pokusy při timeoutu (ne při selhání). Manuální retry z admin UI vytvoří nový job s čistým počítadlem.">Pokusů <i class="ti ti-info-circle text-secondary"></i></th>
                     <th>Vytvořen</th>
                     <th>Dokončen</th>
                     <th class="w-1"></th>
@@ -66,7 +72,7 @@
                         </a>
                         {/if}
                         {if in_array($job->status, ['failed', 'timeout'])}
-                        <a href="{plink retry $job->id}" class="btn btn-sm btn-outline-warning" title="Opakovat job">
+                        <a href="{plink retry $job->id, from => list, status => $filterStatus, client_id => $filterClientId, tool_id => $filterToolId}" class="btn btn-sm btn-outline-warning" title="Opakovat job">
                             <i class="ti ti-refresh"></i>
                         </a>
                         {/if}

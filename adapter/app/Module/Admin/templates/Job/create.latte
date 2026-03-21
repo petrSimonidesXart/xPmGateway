@@ -1,0 +1,124 @@
+{block title}Nový job{/block}
+
+{block actions}
+<a href="{plink default}" class="btn btn-outline-secondary">
+    <i class="ti ti-arrow-left me-1"></i>Zpět na seznam
+</a>
+{/block}
+
+{block content}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                {form createJobForm}
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['tool_id']->htmlId}">Tool</label>
+                        {input tool_id, class => 'form-select'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['client_id']->htmlId}">Klient</label>
+                        {input client_id, class => 'form-select'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['service_account_id']->htmlId}">Service Account</label>
+                        {input service_account_id, class => 'form-select'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['payload']->htmlId}">Payload (JSON)</label>
+                        {input payload}
+                    </div>
+                    {if $form->hasErrors()}
+                        <div class="alert alert-danger">
+                            {foreach $form->errors as $error}
+                                <div>{$error}</div>
+                            {/foreach}
+                        </div>
+                    {/if}
+                    <div class="d-flex justify-content-end">
+                        {input send, class => 'btn btn-primary'}
+                    </div>
+                {/form}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-info-circle me-1"></i>Schéma</h3>
+            </div>
+            <div class="card-body" id="schema-info">
+                <p class="text-secondary">Vyber tool pro zobrazení schématu.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script n:syntax="off">
+document.addEventListener('DOMContentLoaded', function() {
+    var toolSelect = document.querySelector('[name="tool_id"]');
+    var schemaUrl = toolSelect.dataset.schemaUrl;
+    var payloadField = document.querySelector('[name="payload"]');
+    var schemaInfo = document.getElementById('schema-info');
+
+    function generateExample(schema) {
+        if (!schema || !schema.properties) return '{}';
+        var obj = {};
+        var props = schema.properties;
+        var required = schema.required || [];
+        for (var key in props) {
+            var prop = props[key];
+            if (prop.type === 'string') {
+                obj[key] = prop.format === 'date' ? '2026-01-01' : '';
+            } else if (prop.type === 'number' || prop.type === 'integer') {
+                obj[key] = 0;
+            } else if (prop.type === 'boolean') {
+                obj[key] = false;
+            } else if (prop.type === 'array') {
+                obj[key] = [];
+            } else if (prop.type === 'object') {
+                obj[key] = {};
+            }
+        }
+        return JSON.stringify(obj, null, 2);
+    }
+
+    function renderSchema(schema) {
+        if (!schema || !schema.properties) {
+            schemaInfo.innerHTML = '<p class="text-secondary">Žádné schéma pro tento tool.</p>';
+            return;
+        }
+        var required = schema.required || [];
+        var html = '<table class="table table-sm"><thead><tr><th>Pole</th><th>Typ</th><th></th></tr></thead><tbody>';
+        for (var key in schema.properties) {
+            var prop = schema.properties[key];
+            var isReq = required.indexOf(key) !== -1;
+            html += '<tr><td><code>' + key + '</code></td>';
+            html += '<td class="text-secondary">' + (prop.type || '?') + '</td>';
+            html += '<td>' + (isReq ? '<span class="badge bg-red-lt">povinné</span>' : '<span class="badge bg-muted">volitelné</span>') + '</td>';
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        schemaInfo.innerHTML = html;
+    }
+
+    toolSelect.addEventListener('change', function() {
+        var toolId = this.value;
+        if (!toolId) {
+            schemaInfo.innerHTML = '<p class="text-secondary">Vyber tool pro zobrazení schématu.</p>';
+            payloadField.value = '{}';
+            return;
+        }
+        fetch(schemaUrl + (schemaUrl.indexOf('?') !== -1 ? '&' : '?') + 'tool_id=' + toolId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                renderSchema(data.schema);
+                payloadField.value = generateExample(data.schema);
+            })
+            .catch(function() {
+                schemaInfo.innerHTML = '<p class="text-secondary">Nepodařilo se načíst schéma.</p>';
+            });
+    });
+});
+</script>
+{/block}

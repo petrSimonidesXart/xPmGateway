@@ -5,16 +5,21 @@ namespace App\Module\Admin\Presenters;
 
 use App\Model\Repository\ClientRepository;
 use App\Model\Repository\JobRepository;
+use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\ArtifactService;
 use Nette\Application\Responses\FileResponse;
+use Nette\Application\UI\Form;
 
 class JobPresenter extends BasePresenter
 {
+	private const META_TOOLS = ['get_job_status', 'list_my_recent_jobs'];
+
 	public function __construct(
 		private JobRepository $jobRepository,
 		private ClientRepository $clientRepository,
 		private ToolRepository $toolRepository,
+		private ServiceAccountRepository $serviceAccountRepository,
 		private ArtifactService $artifactService,
 	) {
 		parent::__construct();
@@ -83,6 +88,102 @@ class JobPresenter extends BasePresenter
 	}
 
 
+	public function renderCreate(): void
+	{
+		$this->requireAdmin();
+	}
+
+
+	protected function createComponentCreateJobForm(): Form
+	{
+		$tools = $this->toolRepository->findAllActive();
+		$toolItems = [];
+		foreach ($tools as $tool) {
+			if (!in_array($tool->name, self::META_TOOLS, true)) {
+				$toolItems[$tool->id] = $tool->name;
+			}
+		}
+
+		$accounts = $this->serviceAccountRepository->findAllActive();
+		$accountItems = [];
+		foreach ($accounts as $account) {
+			$accountItems[$account->id] = $account->name . ' (' . $account->username . ')';
+		}
+
+		$clients = $this->clientRepository->getTable()->fetchPairs('id', 'name');
+
+		$form = new Form;
+		$form->addSelect('tool_id', 'Tool:', $toolItems)
+			->setPrompt('— Vyber tool —')
+			->setRequired('Vyber tool.')
+			->setHtmlAttribute('data-schema-url', $this->link('toolSchema'));
+		$form->addSelect('client_id', 'Klient:', $clients)
+			->setPrompt('— Vyber klienta —')
+			->setRequired('Vyber klienta.');
+		$form->addSelect('service_account_id', 'Service Account:', $accountItems)
+			->setPrompt('— Vyber service account —')
+			->setRequired('Vyber service account.');
+		$form->addTextArea('payload', 'Payload (JSON):')
+			->setRequired('Vyplň payload.')
+			->setHtmlAttribute('rows', 12)
+			->setHtmlAttribute('class', 'form-control font-monospace');
+		$form->addSubmit('send', 'Vytvořit job');
+		$form->onSuccess[] = $this->createJobFormSucceeded(...);
+
+		return $form;
+	}
+
+
+	public function createJobFormSucceeded(Form $form, \stdClass $values): void
+	{
+		$payload = json_decode($values->payload, true);
+		if ($payload === null && $values->payload !== '{}' && $values->payload !== 'null') {
+			$form->addError('Nevalidní JSON v payloadu.');
+			return;
+		}
+
+		$newJob = $this->jobRepository->create([
+			'client_id' => $values->client_id,
+			'service_account_id' => $values->service_account_id,
+			'tool_id' => $values->tool_id,
+			'payload' => json_encode($payload ?? []),
+			'status' => 'pending',
+		]);
+
+		$tool = $this->toolRepository->findById($values->tool_id);
+		$this->auditService->logAdminAction('job_created_manual', 'success', [
+			'job_id' => $newJob->id,
+			'tool' => $tool?->name,
+		]);
+
+		$this->flashMessage("Job vytvořen, ID: {$newJob->id}", 'success');
+		$this->redirect('detail', $newJob->id);
+	}
+
+
+	/**
+	 * AJAX endpoint: return JSON Schema for a tool's input.
+	 */
+	public function actionToolSchema(): void
+	{
+		$toolId = (int) $this->getParameter('tool_id');
+		$tool = $toolId ? $this->toolRepository->findById($toolId) : null;
+		if (!$tool) {
+			$this->sendJson(['schema' => null]);
+		}
+
+		$schemaFile = __DIR__ . '/../../../../../packages/contracts/'
+			. str_replace('_', '-', $tool->name) . '.input.json';
+
+		if (is_file($schemaFile)) {
+			$schema = json_decode(file_get_contents($schemaFile), true);
+			$this->sendJson(['schema' => $schema]);
+		}
+
+		$this->sendJson(['schema' => null]);
+	}
+
+
 	/**
 	 * Force-cancel a stuck processing/pending job.
 	 */
@@ -132,7 +233,6 @@ class JobPresenter extends BasePresenter
 			$this->redirect('detail', $id);
 		}
 
-		$payload = json_decode($job->payload, true) ?: [];
 		$newJob = $this->jobRepository->create([
 			'client_id' => $job->client_id,
 			'service_account_id' => $job->service_account_id,
@@ -149,7 +249,17 @@ class JobPresenter extends BasePresenter
 			'tool' => $job->ref('tools', 'tool_id')?->name,
 		]);
 
-		$this->flashMessage('Job byl znovu vytvořen.', 'success');
+		$toolName = $job->ref('tools', 'tool_id')?->name ?? '?';
+		$this->flashMessage("Job $toolName zopakován, nový job ID: {$newJob->id}", 'success');
+
+		if ($this->getParameter('from') === 'list') {
+			$this->redirect('default', [
+				'status' => $this->getParameter('status'),
+				'client_id' => $this->getParameter('client_id'),
+				'tool_id' => $this->getParameter('tool_id'),
+			]);
+		}
+
 		$this->redirect('detail', $newJob->id);
 	}
 

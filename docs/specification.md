@@ -635,10 +635,27 @@ Ukládání:
 
 ## 13.3 Job management z admin UI
 
+-   **Nový job** (`job_created_manual`): manuální vytvoření jobu z admin UI (`/admin/jobs/create`)
+    -   Formulář: výběr toolu (bez meta-toolů), klienta, service accountu
+    -   Payload se předvyplní podle JSON Schema kontraktu vybraného toolu (AJAX)
+    -   Po vytvoření přesměruje na detail nového jobu
 -   **Cancel** (`job_cancelled`): zruší pending/processing job, nastaví status=failed
 -   **Retry** (`job_retried`): vytvoří nový job se stejnými parametry, propojení přes `retry_of_job_id`
+    -   Z výpisu jobů: zůstane na výpisu, zachová filtry, flash message
+    -   Z detailu jobu: přejde na detail nového jobu, flash message
 -   Obě akce se logují do audit logu
 -   V job detail view se zobrazuje retry chain oběma směry (původní ↔ nový)
+
+### Počítadlo pokusů (attempts)
+
+Sloupec `attempts/max_attempts` v tabulce jobů slouží k **automatickému retry při timeoutu**:
+
+1.  Worker vyzvedne pending job → `attempts` se zvýší o 1
+2.  Pokud job timeoutuje a `attempts < max_attempts` → automaticky se vrátí na pending
+3.  Po vyčerpání max_attempts zůstane ve stavu timeout/failed
+
+Manuální retry z admin UI vytváří **nový job** s čistým počítadlem (attempts=0).
+Neprovádí se automatický retry při statusu `failed` (jen při `timeout`).
 
 ------------------------------------------------------------------------
 
@@ -667,7 +684,8 @@ Ukládání:
 | Service Accounts — seznam | `/admin/service-accounts` | admin, reader | |
 | Service Account — edit | `/admin/service-accounts/{id}` | admin | |
 | Tools — seznam | `/admin/tools` | admin, reader | seznam toolů, admin může toggle active/inactive |
-| Jobs — seznam | `/admin/jobs` | admin, reader | tabulka s filtry (status, klient, tool, datum) |
+| Jobs — seznam | `/admin/jobs` | admin, reader | tabulka s filtry (status, klient, tool, datum), tlačítko nový job |
+| Job — nový | `/admin/jobs/create` | admin | manuální vytvoření jobu (tool, klient, service account, payload) |
 | Job — detail | `/admin/jobs/{id}` | admin, reader | payload, výsledek, chyba, screenshot galerie, video přehrávání, retry chain |
 | Audit Log | `/admin/audit-log` | admin, reader | filtrovaný seznam (klient, akce, datum) |
 | Admin Users | `/admin/users` | admin | správa admin uživatelů |
