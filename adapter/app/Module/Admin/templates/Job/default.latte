@@ -65,12 +65,18 @@
                 </tr>
             </thead>
             <tbody>
-            {foreach $jobs as $job}
+            {foreach $jobChains as $chain}
+                {var $job = $chain['root']}
+                {var $children = $chain['children']}
                 <tr>
                     <td>
                         <a href="{plink detail $job->id}"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></a>
-                        {if $job->continued_from_job_id}<i class="ti ti-arrow-forward-up text-purple" data-bs-toggle="tooltip" title="Pokračování předchozí úlohy"></i>{/if}
-                        {if $job->retry_of_job_id}<i class="ti ti-refresh text-warning" data-bs-toggle="tooltip" title="Opakování předchozí úlohy"></i>{/if}
+                        {if count($children) > 0}
+                            <button class="btn btn-sm btn-ghost-secondary p-0 ms-1 chain-toggle" data-chain="{$job->id}" data-bs-toggle="tooltip" title="{count($children)} navazující">
+                                <span class="badge bg-secondary">{count($children)}</span>
+                                <i class="ti ti-chevron-right ti-xs chain-icon"></i>
+                            </button>
+                        {/if}
                     </td>
                     <td>{$job->ref('tools', 'tool_id')?->name}</td>
                     <td>{$job->ref('clients', 'client_id')?->name}</td>
@@ -98,6 +104,22 @@
                         {/if}
                     </td>
                 </tr>
+                {foreach $children as $child}
+                <tr class="chain-row chain-{$job->id}" style="display: none;">
+                    <td class="ps-4">
+                        {if $child->continued_from_job_id}<i class="ti ti-arrow-forward-up text-purple me-1"></i>{/if}
+                        {if $child->retry_of_job_id}<i class="ti ti-refresh text-warning me-1"></i>{/if}
+                        <a href="{plink detail $child->id}"><code title="{$child->id}">{$child->id|truncate(12, '…')}</code></a>
+                    </td>
+                    <td class="text-secondary">{$child->ref('tools', 'tool_id')?->name}</td>
+                    <td class="text-secondary">{$child->ref('clients', 'client_id')?->name}</td>
+                    <td><span class="badge badge-{$child->status}">{$child->status}</span></td>
+                    <td class="text-secondary">{$child->attempts}/{$child->max_attempts}</td>
+                    <td class="text-secondary">{$child->created_at|date:'d.m.Y H:i:s'}</td>
+                    <td class="text-secondary">{if $child->finished_at}{$child->finished_at|date:'d.m.Y H:i:s'}{else}—{/if}</td>
+                    <td></td>
+                </tr>
+                {/foreach}
             {else}
                 <tr>
                     <td colspan="8" class="text-center text-secondary py-4">
@@ -138,4 +160,16 @@
     </div>
     {/if}
 </div>
+<script n:syntax="off">
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.chain-toggle');
+    if (!btn) return;
+    var chainId = btn.dataset.chain;
+    var rows = document.querySelectorAll('.chain-' + chainId);
+    var icon = btn.querySelector('.chain-icon');
+    var visible = rows[0] && rows[0].style.display !== 'none';
+    rows.forEach(function(row) { row.style.display = visible ? 'none' : ''; });
+    if (icon) icon.className = visible ? 'ti ti-chevron-right ti-xs chain-icon' : 'ti ti-chevron-down ti-xs chain-icon';
+});
+</script>
 {/block}

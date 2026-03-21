@@ -8,6 +8,7 @@ use App\Model\Repository\JobRepository;
 use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\ArtifactService;
+use App\Model\Service\SchemaValidator;
 use Nette\Application\Responses\FileResponse;
 use Nette\Application\UI\Form;
 
@@ -21,6 +22,7 @@ class JobPresenter extends BasePresenter
 		private ToolRepository $toolRepository,
 		private ServiceAccountRepository $serviceAccountRepository,
 		private ArtifactService $artifactService,
+		private SchemaValidator $schemaValidator,
 	) {
 		parent::__construct();
 	}
@@ -60,7 +62,13 @@ class JobPresenter extends BasePresenter
 		$paginator->setPage($page);
 		$paginator->setItemCount($totalCount);
 
-		$this->template->jobs = $query->limit($paginator->getLength(), $paginator->getOffset())->fetchAll();
+		$allJobs = $query->limit($paginator->getLength(), $paginator->getOffset())->fetchAll();
+
+		// Group jobs into chains: root jobs + their children (retries/continuations)
+		$jobChains = $this->buildJobChains($allJobs);
+
+		$this->template->jobChains = $jobChains;
+		$this->template->jobs = $allJobs; // keep for backward compat
 		$this->template->paginator = $paginator;
 		$this->template->clients = $this->clientRepository->getTable()->fetchPairs('id', 'name');
 		$this->template->tools = $this->toolRepository->getTable()->fetchPairs('id', 'name');
@@ -108,6 +116,57 @@ class JobPresenter extends BasePresenter
 			->where('continued_from_job_id', $id)
 			->order('created_at DESC')
 			->fetch() ?: null;
+	}
+
+
+	/**
+	 * Group flat job list into chains: root jobs with their retries/continuations as children.
+	 * @return array<array{root: ActiveRow, children: ActiveRow[]}>
+	 */
+	private function buildJobChains(array $jobs): array
+	{
+		$byId = [];
+		foreach ($jobs as $job) {
+			$byId[$job->id] = $job;
+		}
+
+		// Find parent IDs (jobs that have children in this result set)
+		$childIds = new \SplObjectStorage;
+		foreach ($jobs as $job) {
+			$parentId = $job->retry_of_job_id ?? $job->continued_from_job_id ?? null;
+			if ($parentId && isset($byId[$parentId])) {
+				$childIds->attach($job);
+			}
+		}
+
+		$chains = [];
+		foreach ($jobs as $job) {
+			if ($childIds->contains($job)) {
+				continue; // skip children, they'll be nested under root
+			}
+
+			// This is a root job — collect its chain
+			$children = [];
+			$this->collectChildren($job->id, $byId, $jobs, $children);
+
+			$chains[] = [
+				'root' => $job,
+				'children' => $children,
+			];
+		}
+
+		return $chains;
+	}
+
+
+	private function collectChildren(string $parentId, array $byId, array $allJobs, array &$children): void
+	{
+		foreach ($allJobs as $job) {
+			if ($job->retry_of_job_id === $parentId || $job->continued_from_job_id === $parentId) {
+				$children[] = $job;
+				$this->collectChildren($job->id, $byId, $allJobs, $children);
+			}
+		}
 	}
 
 
@@ -163,6 +222,19 @@ class JobPresenter extends BasePresenter
 		if ($payload === null && $values->payload !== '{}' && $values->payload !== 'null') {
 			$form->addError('Nevalidní JSON v payloadu.');
 			return;
+		}
+
+		// Validate payload against JSON Schema
+		$tool = $this->toolRepository->findById($values->tool_id);
+		if ($tool) {
+			$schemaFile = str_replace('_', '-', $tool->name) . '.input.json';
+			$errors = $this->schemaValidator->validate($payload ?? [], $schemaFile);
+			if ($errors !== null) {
+				foreach ($errors as $error) {
+					$form->addError($error);
+				}
+				return;
+			}
 		}
 
 		$newJob = $this->jobRepository->create([
