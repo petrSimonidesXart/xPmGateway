@@ -34,6 +34,7 @@ class RouterFactory
         $admin->addRoute('admin/clients/<id>/tokens', 'Token:default');
         $admin->addRoute('admin/jobs/create', 'Job:create');
         $admin->addRoute('admin/jobs/tool-schema', 'Job:toolSchema');
+        $admin->addRoute('admin/jobs/<id>/progress', 'Job:progress');
         $admin->addRoute('admin/jobs/<id>/screenshot/<filename>', 'Job:screenshot');
         $admin->addRoute('admin/<presenter>/<action=default>[/<id>]', 'Dashboard:default');
 

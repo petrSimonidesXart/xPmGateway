@@ -106,13 +106,13 @@
             </div>
         </div>
     </div>
-    {if $job->step_results}
-    {var $stepResults = json_decode($job->step_results, true)}
-    {if $stepResults}
-    <div class="col-12">
+    <div class="col-12 {if !$job->step_results}d-none{/if}" id="progress-card">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title"><i class="ti ti-list-check me-1"></i>Průběh</h3>
+                <h3 class="card-title">
+                    <i class="ti ti-list-check me-1"></i>Průběh
+                    <span class="spinner-border spinner-border-sm ms-2 d-none" id="progress-spinner"></span>
+                </h3>
             </div>
             <div class="table-responsive">
                 <table class="table table-vcenter card-table table-sm">
@@ -123,8 +123,9 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                    {foreach $stepResults as $i => $step}
+                    <tbody id="progress-body">
+                    {if $job->step_results}
+                    {foreach json_decode($job->step_results, true) as $i => $step}
                         <tr>
                             <td class="text-secondary">{$i + 1}</td>
                             <td>
@@ -150,13 +151,12 @@
                             </td>
                         </tr>
                     {/foreach}
+                    {/if}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    {/if}
-    {/if}
     {if $job->result}
     <div class="col-12">
         <div class="card">
@@ -270,4 +270,79 @@
     </div>
     {/if}
 </div>
+
+{if in_array($job->status, ['pending', 'processing'])}
+<script n:syntax="off">
+(function() {
+    var POLL_URL = '{plink progress $job->id}';
+    var body = document.getElementById('progress-body');
+    var card = document.getElementById('progress-card');
+    var spinner = document.getElementById('progress-spinner');
+    var prevCount = 0;
+    var stopped = false;
+
+    function badgeHtml(status) {
+        if (status === 'success') return '<span class="badge badge-success">OK</span>';
+        if (status === 'failed') return '<span class="badge badge-failed">Chyba</span>';
+        return '<span class="badge bg-secondary">' + (status || '?') + '</span>';
+    }
+
+    function renderSteps(steps) {
+        if (!steps || !steps.length) return;
+        card.classList.remove('d-none');
+        spinner.classList.remove('d-none');
+
+        var html = '';
+        for (var i = 0; i < steps.length; i++) {
+            var s = steps[i];
+            var msg = '';
+            if (s.output && s.output.message) {
+                msg = s.output.message;
+            } else if (s.tool) {
+                msg = '<code>' + s.tool + '</code>';
+                if (s.error) msg += ' <span class="text-danger ms-2">' + s.error + '</span>';
+            } else {
+                msg = s.id || '';
+            }
+            html += '<tr><td class="text-secondary">' + (i+1) + '</td>';
+            html += '<td>' + msg + '</td>';
+            html += '<td>' + badgeHtml(s.status) + '</td></tr>';
+        }
+        body.innerHTML = html;
+
+        if (steps.length > prevCount) {
+            // Scroll the new row into view
+            var lastRow = body.lastElementChild;
+            if (lastRow) lastRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        prevCount = steps.length;
+    }
+
+    async function poll() {
+        if (stopped) return;
+        try {
+            var res = await fetch(POLL_URL);
+            if (!res.ok) return;
+            var data = await res.json();
+
+            if (data.step_results) {
+                renderSteps(data.step_results);
+            }
+
+            // Stop polling when job is done
+            if (data.status === 'success' || data.status === 'failed' || data.status === 'timeout') {
+                stopped = true;
+                spinner.classList.add('d-none');
+                // Reload page to show full result, artifacts, video
+                setTimeout(function() { window.location.reload(); }, 1500);
+                return;
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    setInterval(poll, 2000);
+    poll();
+})();
+</script>
+{/if}
 {/block}

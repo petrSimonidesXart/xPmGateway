@@ -342,6 +342,23 @@ class JobPresenter extends BasePresenter
 	}
 
 
+	/**
+	 * AJAX endpoint: returns current job status + step_results for live progress polling.
+	 */
+	public function actionProgress(string $id): void
+	{
+		$job = $this->jobRepository->findById($id);
+		if (!$job) {
+			$this->sendJson(['status' => 'not_found']);
+		}
+
+		$this->sendJson([
+			'status' => $job->status,
+			'step_results' => $job->step_results ? json_decode($job->step_results, true) : null,
+		]);
+	}
+
+
 	public function actionScreenshot(string $id, string $filename): void
 	{
 		// Sanitize filename to prevent directory traversal
