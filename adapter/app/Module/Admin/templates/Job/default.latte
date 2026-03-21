@@ -67,7 +67,11 @@
             <tbody>
             {foreach $jobs as $job}
                 <tr>
-                    <td><a href="{plink detail $job->id}"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></a></td>
+                    <td>
+                        <a href="{plink detail $job->id}"><code title="{$job->id}">{$job->id|truncate(12, '…')}</code></a>
+                        {if $job->continued_from_job_id}<i class="ti ti-arrow-forward-up text-purple" data-bs-toggle="tooltip" title="Pokračování předchozí úlohy"></i>{/if}
+                        {if $job->retry_of_job_id}<i class="ti ti-refresh text-warning" data-bs-toggle="tooltip" title="Opakování předchozí úlohy"></i>{/if}
+                    </td>
                     <td>{$job->ref('tools', 'tool_id')?->name}</td>
                     <td>{$job->ref('clients', 'client_id')?->name}</td>
                     <td><span class="badge badge-{$job->status}">{$job->status}</span></td>

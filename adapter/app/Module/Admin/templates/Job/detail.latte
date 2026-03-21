@@ -92,6 +92,24 @@
                         </div>
                     </div>
                     {/if}
+                    {if $continuedFrom}
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Pokračování úlohy</div>
+                        <div class="datagrid-content">
+                            <a href="{plink detail $continuedFrom->id}"><i class="ti ti-arrow-forward-up me-1 text-purple"></i><code title="{$continuedFrom->id}">{$continuedFrom->id|truncate(12, '…')}</code></a>
+                            <span class="badge badge-{$continuedFrom->status} ms-1">{$continuedFrom->status}</span>
+                        </div>
+                    </div>
+                    {/if}
+                    {if $continuedAs}
+                    <div class="datagrid-item">
+                        <div class="datagrid-title">Pokračuje jako</div>
+                        <div class="datagrid-content">
+                            <a href="{plink detail $continuedAs->id}"><i class="ti ti-arrow-forward me-1 text-purple"></i><code title="{$continuedAs->id}">{$continuedAs->id|truncate(12, '…')}</code></a>
+                            <span class="badge badge-{$continuedAs->status} ms-1">{$continuedAs->status}</span>
+                        </div>
+                    </div>
+                    {/if}
                 </div>
             </div>
         </div>
@@ -363,7 +381,7 @@
             }
 
             // Stop polling when job is done
-            if (data.status === 'success' || data.status === 'failed' || data.status === 'timeout') {
+            if (data.status !== 'pending' && data.status !== 'processing') {
                 stopped = true;
                 spinner.classList.add('d-none');
                 // Reload page to show full result, artifacts, video

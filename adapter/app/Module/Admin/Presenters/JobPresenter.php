@@ -99,6 +99,15 @@ class JobPresenter extends BasePresenter
 			->where('retry_of_job_id', $id)
 			->order('created_at DESC')
 			->fetch() ?: null;
+
+		// Continuation chain (disambiguation flow)
+		$this->template->continuedFrom = $job->continued_from_job_id
+			? $this->jobRepository->findById($job->continued_from_job_id)
+			: null;
+		$this->template->continuedAs = $this->jobRepository->getTable()
+			->where('continued_from_job_id', $id)
+			->order('created_at DESC')
+			->fetch() ?: null;
 	}
 
 
@@ -254,10 +263,10 @@ class JobPresenter extends BasePresenter
 
 		// Build payload — for awaiting_input, merge selected path_info
 		$payload = json_decode($job->payload, true) ?? [];
+		$isContinuation = $job->status === 'awaiting_input';
 		$selectedPathInfo = $this->getHttpRequest()->getPost('selected_path_info');
-		if ($selectedPathInfo && $job->status === 'awaiting_input') {
+		if ($selectedPathInfo && $isContinuation) {
 			$payload['path_info'] = $selectedPathInfo;
-			// Remove query to force direct navigation
 			unset($payload['query']);
 		}
 
@@ -268,7 +277,8 @@ class JobPresenter extends BasePresenter
 			'payload' => json_encode($payload),
 			'status' => 'pending',
 			'timeout_seconds' => $job->timeout_seconds,
-			'retry_of_job_id' => $job->id,
+			'retry_of_job_id' => $isContinuation ? null : $job->id,
+			'continued_from_job_id' => $isContinuation ? $job->id : null,
 		]);
 
 		$this->auditService->logAdminAction('job_retried', 'success', [
