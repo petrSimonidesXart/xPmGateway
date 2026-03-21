@@ -43,6 +43,9 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 	await ctx.page.keyboard.press('Control+A');
 	await ctx.page.keyboard.type(text);
 
+	// Wait for editor to process the input
+	await ctx.page.waitForTimeout(1000);
+
 	// Click submit button in .comment_form_main_buttons
 	ctx.log('Odesílám komentář...');
 	const submitBtn = ctx.page.locator('.comment_form_main_buttons button[type="submit"]');
@@ -51,6 +54,7 @@ export async function pmCreateComment(ctx: ToolContext, input: Record<string, un
 		return fail('Tlačítko pro odeslání komentáře nenalezeno');
 	}
 	await submitBtn.click();
+	ctx.log('Kliknuto na tlačítko odeslání');
 
 	// Wait for AJAX — comment appears as .comment.loaded
 	ctx.log('Čekám na uložení komentáře...');
