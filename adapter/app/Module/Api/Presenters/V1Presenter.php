@@ -6,6 +6,8 @@ namespace App\Module\Api\Presenters;
 use App\Model\Facade\McpException;
 use App\Model\Facade\McpFacade;
 use App\Model\Repository\ClientPermissionRepository;
+use App\Model\Repository\PmLookupRepository;
+use App\Model\Repository\ScenarioRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\ArtifactService;
 use App\Model\Service\AuthService;
@@ -24,6 +26,8 @@ class V1Presenter extends Presenter
 		private McpFacade $mcpFacade,
 		private ArtifactService $artifactService,
 		private ToolRepository $toolRepository,
+		private ScenarioRepository $scenarioRepository,
+		private PmLookupRepository $lookupRepository,
 		private ClientPermissionRepository $permissionRepository,
 	) {
 		parent::__construct();
@@ -111,6 +115,63 @@ class V1Presenter extends Presenter
 				],
 			];
 		}
+
+		// Add scenarios as API endpoints
+		$lookupHints = $this->buildLookupHints();
+		$runToolPermitted = isset($permittedToolIds[
+			$this->toolRepository->findByName('run_scenario')?->id ?? 0
+		]);
+
+		if ($runToolPermitted) {
+			$scenarios = $this->scenarioRepository->findAllActive();
+			foreach ($scenarios as $scenario) {
+				$inputSchema = json_decode($scenario->input_schema, true)
+					?: ['type' => 'object', 'properties' => new \stdClass];
+				$inputSchema = $this->enrichSchemaWithLookups($inputSchema, $lookupHints);
+
+				$operationId = 'scenario' . str_replace('_', '', ucwords($scenario->name, '_'));
+
+				$paths['/api/v1/tools/scenario_' . $scenario->name] = [
+					'post' => [
+						'operationId' => $operationId,
+						'summary' => $scenario->description,
+						'description' => 'Spustí scénář "' . $scenario->name . '". Scénář je řetěz kroků s automatickým přihlášením.',
+						'security' => [['bearerAuth' => []]],
+						'requestBody' => [
+							'required' => true,
+							'content' => [
+								'application/json' => [
+									'schema' => json_decode(json_encode($inputSchema)),
+								],
+							],
+						],
+						'responses' => [
+							'200' => [
+								'description' => 'Scenario execution result',
+								'content' => [
+									'application/json' => [
+										'schema' => ['$ref' => '#/components/schemas/JobResult'],
+									],
+								],
+							],
+							'401' => ['description' => 'Invalid or missing API token'],
+							'422' => ['description' => 'Input validation error'],
+							'429' => ['description' => 'Rate limit exceeded'],
+						],
+					],
+				];
+			}
+		}
+
+		// Also enrich tool schemas with lookups
+		foreach ($paths as $path => &$methods) {
+			if (isset($methods['post']['requestBody']['content']['application/json']['schema'])) {
+				$schema = json_decode(json_encode($methods['post']['requestBody']['content']['application/json']['schema']), true);
+				$schema = $this->enrichSchemaWithLookups($schema, $lookupHints);
+				$methods['post']['requestBody']['content']['application/json']['schema'] = json_decode(json_encode($schema));
+			}
+		}
+		unset($methods);
 
 		// Always include job status endpoint
 		$paths['/api/v1/jobs/{id}'] = [
@@ -469,5 +530,47 @@ class V1Presenter extends Presenter
 	{
 		$this->getHttpResponse()->setCode($httpCode);
 		$this->sendJson(['error' => $message]);
+	}
+
+
+	private function buildLookupHints(): array
+	{
+		$hints = [];
+		foreach (['people', 'labels', 'schedule'] as $category) {
+			$lookups = $this->lookupRepository->getByCategory($category);
+			$parts = [];
+			foreach ($lookups as $shortcut => $data) {
+				$parts[] = $shortcut . '=' . $data['value'];
+			}
+			$hints[$category] = implode(', ', $parts);
+		}
+		return $hints;
+	}
+
+
+	private function enrichSchemaWithLookups(array $schema, array $lookupHints): array
+	{
+		if (empty($schema['properties']) || !is_array($schema['properties'])) {
+			return $schema;
+		}
+
+		$fieldToCategory = [
+			'assignee' => 'people',
+			'subtask_assignee' => 'people',
+			'label' => 'labels',
+			'subtask_label' => 'labels',
+			'schedule' => 'schedule',
+			'subtask_schedule' => 'schedule',
+		];
+
+		foreach ($schema['properties'] as $key => &$prop) {
+			if (isset($fieldToCategory[$key], $lookupHints[$fieldToCategory[$key]])) {
+				$existing = $prop['description'] ?? '';
+				$prop['description'] = trim($existing . ' Zkratky: ' . $lookupHints[$fieldToCategory[$key]]);
+			}
+		}
+		unset($prop);
+
+		return $schema;
 	}
 }

@@ -5,6 +5,7 @@ namespace App\Module\Mcp\Presenters;
 
 use App\Model\Facade\McpException;
 use App\Model\Facade\McpFacade;
+use App\Model\Repository\PmLookupRepository;
 use App\Model\Repository\ScenarioRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\AuditService;
@@ -29,6 +30,7 @@ class McpPresenter extends Presenter
 		private RateLimitService $rateLimitService,
 		private ToolRepository $toolRepository,
 		private ScenarioRepository $scenarioRepository,
+		private PmLookupRepository $lookupRepository,
 	) {
 		parent::__construct();
 	}
@@ -142,10 +144,10 @@ class McpPresenter extends Presenter
 	private function processToolsList(): array
 	{
 		$tools = $this->toolRepository->findAllActive();
+		$lookupHints = $this->buildLookupHints();
 		$result = [];
 
 		foreach ($tools as $tool) {
-			// Skip run_scenario from direct listing — scenarios are listed separately below
 			if ($tool->name === 'run_scenario') {
 				continue;
 			}
@@ -157,6 +159,8 @@ class McpPresenter extends Presenter
 				? json_decode(file_get_contents($schemaFile), true)
 				: ['type' => 'object', 'properties' => new \stdClass];
 
+			$inputSchema = $this->enrichSchemaWithLookups($inputSchema, $lookupHints);
+
 			$result[] = [
 				'name' => $tool->name,
 				'description' => $tool->description,
@@ -164,11 +168,13 @@ class McpPresenter extends Presenter
 			];
 		}
 
-		// Add active scenarios as tools (prefixed with scenario_)
+		// Add active scenarios as tools
 		$scenarios = $this->scenarioRepository->findAllActive();
 		foreach ($scenarios as $scenario) {
 			$inputSchema = json_decode($scenario->input_schema, true)
 				?: ['type' => 'object', 'properties' => new \stdClass];
+
+			$inputSchema = $this->enrichSchemaWithLookups($inputSchema, $lookupHints);
 
 			$result[] = [
 				'name' => 'scenario_' . $scenario->name,
@@ -178,6 +184,55 @@ class McpPresenter extends Presenter
 		}
 
 		return ['tools' => $result];
+	}
+
+
+	/**
+	 * Build lookup hint strings for embedding in schema descriptions.
+	 */
+	private function buildLookupHints(): array
+	{
+		$hints = [];
+		foreach (['people', 'labels', 'schedule'] as $category) {
+			$lookups = $this->lookupRepository->getByCategory($category);
+			$parts = [];
+			foreach ($lookups as $shortcut => $data) {
+				$parts[] = $shortcut . '=' . $data['value'];
+			}
+			$hints[$category] = implode(', ', $parts);
+		}
+		return $hints;
+	}
+
+
+	/**
+	 * Enrich schema property descriptions with lookup values based on field name.
+	 */
+	private function enrichSchemaWithLookups(array $schema, array $lookupHints): array
+	{
+		if (empty($schema['properties']) || !is_array($schema['properties'])) {
+			return $schema;
+		}
+
+		$fieldToCategory = [
+			'assignee' => 'people',
+			'subtask_assignee' => 'people',
+			'label' => 'labels',
+			'subtask_label' => 'labels',
+			'schedule' => 'schedule',
+			'subtask_schedule' => 'schedule',
+		];
+
+		foreach ($schema['properties'] as $key => &$prop) {
+			if (isset($fieldToCategory[$key]) && isset($lookupHints[$fieldToCategory[$key]])) {
+				$category = $fieldToCategory[$key];
+				$existing = $prop['description'] ?? '';
+				$prop['description'] = trim($existing . ' Zkratky: ' . $lookupHints[$category]);
+			}
+		}
+		unset($prop);
+
+		return $schema;
 	}
 
 
