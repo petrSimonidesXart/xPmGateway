@@ -30,7 +30,7 @@ export function resolveTemplates(value: unknown, context: Record<string, unknown
 /** Resolve a single string. Handles both full-replacement and inline expressions. */
 function resolveString(str: string, context: Record<string, unknown>): unknown {
 	// If the entire string is a single expression, return the raw value (preserves type)
-	const fullMatch = /^\{\{(.+?)\}\}$/.exec(str.trim());
+	const fullMatch = /^\{\{([^}]+)\}\}$/.exec(str.trim());
 	if (fullMatch) {
 		return resolvePath(fullMatch[1].trim(), context);
 	}

@@ -46,6 +46,7 @@ describe('AdapterApi', () => {
                 ok: false,
                 status: 500,
                 statusText: 'Internal Server Error',
+                text: async () => 'Server error details',
             });
 
             await expect(api.getNextJob()).rejects.toThrow('API error: 500 Internal Server Error');
