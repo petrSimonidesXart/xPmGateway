@@ -6,10 +6,9 @@ namespace App\Module\Admin\Presenters;
 use App\Model\Repository\ClientRepository;
 use App\Model\Repository\JobRepository;
 use App\Model\Repository\ScenarioRepository;
-use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Repository\ToolRepository;
+use App\Model\Service\AuthService;
 use Nette\Application\UI\Form;
-use Nette\Utils\Json;
 
 class ScenarioPresenter extends BasePresenter
 {
@@ -18,7 +17,7 @@ class ScenarioPresenter extends BasePresenter
 		private ToolRepository $toolRepository,
 		private JobRepository $jobRepository,
 		private ClientRepository $clientRepository,
-		private ServiceAccountRepository $serviceAccountRepository,
+		private AuthService $authService,
 	) {
 		parent::__construct();
 	}
@@ -48,7 +47,6 @@ class ScenarioPresenter extends BasePresenter
 		$this->template->clients = $this->clientRepository->getTable()
 			->where('is_active', true)
 			->fetchPairs('id', 'name');
-		$this->template->serviceAccounts = $this->serviceAccountRepository->findAllActive();
 
 		// Recent runs of this scenario
 		$this->template->recentRuns = $this->jobRepository->getTable()
@@ -174,7 +172,12 @@ class ScenarioPresenter extends BasePresenter
 		}
 
 		$clientId = (int) $this->getHttpRequest()->getPost('client_id');
-		$serviceAccountId = (int) $this->getHttpRequest()->getPost('service_account_id');
+		$client = $this->clientRepository->findById($clientId);
+		if (!$client || !$client->is_active) {
+			$this->flashMessage('Klient nenalezen nebo neaktivní.', 'error');
+			$this->redirect('detail', $id);
+		}
+
 		$inputJson = $this->getHttpRequest()->getPost('scenario_input') ?? '{}';
 		$inputData = json_decode($inputJson, true);
 
@@ -190,6 +193,17 @@ class ScenarioPresenter extends BasePresenter
 			$this->redirect('detail', $id);
 		}
 
+		// Check client has permission for all tools in scenario steps
+		$steps = json_decode($scenario->steps, true) ?? [];
+		$missingTools = $this->authService->getMissingScenarioPermissions($clientId, $steps);
+		if ($missingTools !== []) {
+			$this->flashMessage(
+				'Klient nemá oprávnění pro nástroje ve scénáři: ' . implode(', ', $missingTools),
+				'danger',
+			);
+			$this->redirect('detail', $id);
+		}
+
 		$payload = [
 			'scenario' => [
 				'name' => $scenario->name,
@@ -202,7 +216,7 @@ class ScenarioPresenter extends BasePresenter
 
 		$newJob = $this->jobRepository->create([
 			'client_id' => $clientId,
-			'service_account_id' => $serviceAccountId,
+			'service_account_id' => $client->service_account_id,
 			'tool_id' => $runTool->id,
 			'scenario_id' => $id,
 			'payload' => json_encode($payload),
@@ -217,6 +231,29 @@ class ScenarioPresenter extends BasePresenter
 
 		$this->flashMessage("Scénář spuštěn, job ID: {$newJob->id}");
 		$this->redirect(':Admin:Job:detail', $newJob->id);
+	}
+
+
+	/**
+	 * AJAX: Check if selected client has permissions for all tools in this scenario.
+	 */
+	public function handleCheckPermissions(int $id): void
+	{
+		$scenario = $this->scenarioRepository->findById($id);
+		if (!$scenario) {
+			$this->sendJson(['error' => 'Scenario not found']);
+			return;
+		}
+
+		$clientId = (int) $this->getParameter('client_id');
+		if ($clientId <= 0) {
+			$this->sendJson(['ok' => true, 'missing' => []]);
+			return;
+		}
+
+		$steps = json_decode($scenario->steps, true) ?? [];
+		$missing = $this->authService->getMissingScenarioPermissions($clientId, $steps);
+		$this->sendJson(['ok' => $missing === [], 'missing' => $missing]);
 	}
 
 

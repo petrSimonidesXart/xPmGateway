@@ -38,6 +38,11 @@
                     <td>
                         {if $isAdmin}
                         <div class="btn-list">
+                            {if $scenario->is_active}
+                            <a href="{plink detail $scenario->id}" class="btn btn-sm btn-green">
+                                <i class="ti ti-player-play me-1"></i>Spustit
+                            </a>
+                            {/if}
                             <a href="{plink edit $scenario->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
                             <form method="post" action="{plink toggle! id => $scenario->id}" class="d-inline">
                                 <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">

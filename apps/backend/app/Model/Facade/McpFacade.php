@@ -262,6 +262,19 @@ class McpFacade
 			throw new McpException('Permission denied for scenarios', 403);
 		}
 
+		// Check permission for every tool referenced in scenario steps
+		$steps = json_decode($scenario->steps, true) ?? [];
+		$missingTools = $this->authService->getMissingScenarioPermissions($client->id, $steps);
+		if ($missingTools !== []) {
+			$this->auditService->logMcpCall($client, $token, $toolName, 'denied', $params, [
+				'missing_permissions' => $missingTools,
+			]);
+			throw new McpException(
+				'Permission denied for tools in scenario: ' . implode(', ', $missingTools),
+				403,
+			);
+		}
+
 		// Validate input against scenario's schema
 		$inputSchema = json_decode($scenario->input_schema, true);
 		if ($inputSchema && !empty($inputSchema['properties'])) {

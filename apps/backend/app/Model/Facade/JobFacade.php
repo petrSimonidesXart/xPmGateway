@@ -36,13 +36,25 @@ class JobFacade
 		$job = $this->jobService->findById($pendingJob->id);
 		$serviceAccount = $job->ref('service_accounts', 'service_account_id');
 
+		if (!$serviceAccount || !$serviceAccount->is_active) {
+			$this->jobService->failJob($pendingJob->id, 'Service account is inactive or missing');
+			return null;
+		}
+
+		try {
+			$password = $this->encryptionService->decrypt($serviceAccount->password_encrypted);
+		} catch (\Throwable $e) {
+			$this->jobService->failJob($pendingJob->id, 'Cannot decrypt service account credentials: ' . $e->getMessage());
+			return null;
+		}
+
 		return [
 			'id' => $job->id,
 			'tool_name' => $job->ref('tools', 'tool_id')?->name,
 			'payload' => json_decode($job->payload, true),
 			'service_account' => [
 				'username' => $serviceAccount->username,
-				'password' => $this->encryptionService->decrypt($serviceAccount->password_encrypted),
+				'password' => $password,
 				'base_url' => $serviceAccount->base_url,
 			],
 			'attempt' => $job->attempts,

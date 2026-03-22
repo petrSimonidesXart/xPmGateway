@@ -14,7 +14,7 @@ parameters:
         password: ''
 
 application:
-    errorPresenter: Error
+    errorPresenter: Admin:Error
     mapping:
         *: App\Module\*\Presenters\*Presenter
 

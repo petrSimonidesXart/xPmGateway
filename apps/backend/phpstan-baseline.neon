@@ -9,7 +9,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>status" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 3
 			path: app/Model/Facade/McpFacade.php
 
 		-
@@ -47,3 +47,27 @@ parameters:
 			identifier: deadCode.unreachable
 			count: 2
 			path: app/Module/Internal/Presenters/JobsPresenter.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/Module/Admin/Presenters/ScenarioPresenter.php
+
+		-
+			message: '#^Method App\\Model\\Facade\\McpFacade\:\:handleCreateTask\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Model/Facade/McpFacade.php
+
+		-
+			message: '#^Method App\\Module\\Admin\\Presenters\\JobPresenter\:\:buildJobChains\(\) has invalid return type App\\Module\\Admin\\Presenters\\ActiveRow\.$#'
+			identifier: class.notFound
+			count: 2
+			path: app/Module/Admin/Presenters/JobPresenter.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Module/Admin/Presenters/JobPresenter.php

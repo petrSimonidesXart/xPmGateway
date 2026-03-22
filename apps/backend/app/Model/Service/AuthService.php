@@ -6,6 +6,7 @@ namespace App\Model\Service;
 use App\Model\Repository\ApiTokenRepository;
 use App\Model\Repository\ClientPermissionRepository;
 use App\Model\Repository\ClientRepository;
+use App\Model\Repository\ToolRepository;
 use Nette\Database\Table\ActiveRow;
 
 class AuthService
@@ -14,6 +15,7 @@ class AuthService
 		private ApiTokenRepository $apiTokenRepository,
 		private ClientRepository $clientRepository,
 		private ClientPermissionRepository $permissionRepository,
+		private ToolRepository $toolRepository,
 	) {
 	}
 
@@ -55,6 +57,49 @@ class AuthService
 	public function hasToolPermission(int $clientId, int $toolId): bool
 	{
 		return $this->permissionRepository->hasPermission($clientId, $toolId);
+	}
+
+
+	/**
+	 * Check if client has permission for all tools in scenario steps.
+	 * Returns list of tool names the client is missing permission for.
+	 * @param list<array<string, mixed>> $steps
+	 * @return string[]
+	 */
+	public function getMissingScenarioPermissions(int $clientId, array $steps): array
+	{
+		$requiredTools = $this->collectScenarioToolNames($steps);
+		$missing = [];
+		foreach ($requiredTools as $toolName) {
+			$tool = $this->toolRepository->findByName($toolName);
+			if (!$tool || !$this->permissionRepository->hasPermission($clientId, $tool->id)) {
+				$missing[] = $toolName;
+			}
+		}
+		return $missing;
+	}
+
+
+	/**
+	 * Recursively collect all tool names referenced in scenario steps.
+	 * @param list<array<string, mixed>> $steps
+	 * @return string[]
+	 */
+	private function collectScenarioToolNames(array $steps): array
+	{
+		$tools = [];
+		foreach ($steps as $step) {
+			$type = $step['type'] ?? '';
+			if ($type === 'tool' && isset($step['tool'])) {
+				$tools[] = $step['tool'];
+			} elseif ($type === 'condition') {
+				$tools = array_merge($tools, $this->collectScenarioToolNames($step['then'] ?? []));
+				$tools = array_merge($tools, $this->collectScenarioToolNames($step['else'] ?? []));
+			} elseif ($type === 'loop') {
+				$tools = array_merge($tools, $this->collectScenarioToolNames($step['steps'] ?? []));
+			}
+		}
+		return array_unique($tools);
 	}
 
 

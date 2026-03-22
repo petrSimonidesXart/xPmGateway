@@ -120,21 +120,16 @@
                     <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
                     <div class="mb-3">
                         <label class="form-label">Klient</label>
-                        <select name="client_id" class="form-select" required>
+                        <select name="client_id" class="form-select" required id="scenarioClientSelect">
                             <option value="">— Vyber klienta —</option>
                             {foreach $clients as $cid => $cname}
                                 <option value="{$cid}">{$cname}</option>
                             {/foreach}
                         </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Service Account</label>
-                        <select name="service_account_id" class="form-select" required>
-                            <option value="">— Vyber service account —</option>
-                            {foreach $serviceAccounts as $sa}
-                                <option value="{$sa->id}">{$sa->name} ({$sa->username})</option>
-                            {/foreach}
-                        </select>
+                        <div id="permissionWarning" class="alert alert-warning mt-2 py-2 d-none">
+                            <i class="ti ti-alert-triangle me-1"></i>
+                            Klient nemá oprávnění pro: <strong id="missingToolsList"></strong>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Vstupní data (JSON)</label>
@@ -234,4 +229,30 @@
     </div>
     {/if}
 </div>
+
+{if $isAdmin && $scenario->is_active}
+<script>
+document.getElementById('scenarioClientSelect')?.addEventListener('change', async function() {
+    const warning = document.getElementById('permissionWarning');
+    const list = document.getElementById('missingToolsList');
+    const submitBtn = this.closest('form').querySelector('button[type="submit"]');
+    warning.classList.add('d-none');
+
+    if (!this.value) return;
+
+    try {
+        const url = {plink checkPermissions! id => $scenario->id, client_id => 0};
+        const resp = await fetch(url.replace('client_id=0', 'client_id=' + this.value));
+        const data = await resp.json();
+        if (!data.ok && data.missing.length > 0) {
+            list.textContent = data.missing.join(', ');
+            warning.classList.remove('d-none');
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.disabled = false;
+        }
+    } catch (e) { /* ignore */ }
+});
+</script>
+{/if}
 {/block}

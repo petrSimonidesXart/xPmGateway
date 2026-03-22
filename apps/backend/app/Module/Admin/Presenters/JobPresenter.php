@@ -8,13 +8,16 @@ use App\Model\Repository\JobRepository;
 use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\ArtifactService;
+use App\Model\Service\AuthService;
 use App\Model\Service\SchemaValidator;
 use Nette\Application\Responses\FileResponse;
 use Nette\Application\UI\Form;
+use Nette\Utils\Paginator;
 
 class JobPresenter extends BasePresenter
 {
 	private const META_TOOLS = ['get_job_status', 'list_my_recent_jobs'];
+
 
 	public function __construct(
 		private JobRepository $jobRepository,
@@ -23,6 +26,7 @@ class JobPresenter extends BasePresenter
 		private ServiceAccountRepository $serviceAccountRepository,
 		private ArtifactService $artifactService,
 		private SchemaValidator $schemaValidator,
+		private AuthService $authService,
 	) {
 		parent::__construct();
 	}
@@ -57,7 +61,7 @@ class JobPresenter extends BasePresenter
 		$itemsPerPage = 50;
 		$totalCount = $countQuery->count('*');
 
-		$paginator = new \Nette\Utils\Paginator;
+		$paginator = new Paginator;
 		$paginator->setItemsPerPage($itemsPerPage);
 		$paginator->setPage($page);
 		$paginator->setItemCount($totalCount);
@@ -363,6 +367,26 @@ class JobPresenter extends BasePresenter
 		if (!in_array($job->status, ['failed', 'timeout', 'awaiting_input'], true)) {
 			$this->flashMessage('Opakovat lze pouze selhané, timeout nebo čekající joby.', 'warning');
 			$this->redirect('detail', $id);
+		}
+
+		$serviceAccount = $job->ref('service_accounts', 'service_account_id');
+		if (!$serviceAccount || !$serviceAccount->is_active) {
+			$this->flashMessage('Nelze opakovat — service account je neaktivní nebo neexistuje.', 'danger');
+			$this->redirect('detail', $id);
+		}
+
+		// Check scenario tool permissions on retry
+		if ($job->scenario_id) {
+			$payload = json_decode($job->payload, true) ?? [];
+			$steps = $payload['scenario']['steps'] ?? [];
+			$missingTools = $this->authService->getMissingScenarioPermissions($job->client_id, $steps);
+			if ($missingTools !== []) {
+				$this->flashMessage(
+					'Klient nemá oprávnění pro nástroje ve scénáři: ' . implode(', ', $missingTools),
+					'danger',
+				);
+				$this->redirect('detail', $id);
+			}
 		}
 
 		// Build payload — for awaiting_input, merge selected path_info
