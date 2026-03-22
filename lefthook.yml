@@ -1,0 +1,42 @@
+pre-commit:
+  parallel: true
+  commands:
+    phpstan:
+      root: apps/backend/
+      glob: "*.php"
+      run: vendor/bin/phpstan analyse --no-progress --error-format=raw {staged_files}
+      stage_fixed: true
+
+    php-cs:
+      root: apps/backend/
+      glob: "*.php"
+      run: vendor/bin/phpcs --standard=phpcs.xml {staged_files}
+      stage_fixed: true
+
+    php-cs-fix:
+      root: apps/backend/
+      glob: "*.php"
+      run: vendor/bin/phpcbf --standard=phpcs.xml {staged_files}
+      stage_fixed: true
+
+    eslint:
+      root: apps/worker/
+      glob: "*.{ts,js}"
+      run: npx eslint {staged_files}
+      stage_fixed: true
+
+    tsc:
+      root: apps/worker/
+      glob: "*.ts"
+      run: npm run typecheck
+
+pre-push:
+  parallel: true
+  commands:
+    php-tests:
+      root: apps/backend/
+      run: composer test
+
+    worker-tests:
+      root: apps/worker/
+      run: npm test

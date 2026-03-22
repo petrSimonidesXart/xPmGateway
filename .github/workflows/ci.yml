@@ -33,7 +33,7 @@ jobs:
         working-directory: apps/backend
 
       - name: Tests
-        run: vendor/bin/tester tests/Service tests/Facade tests/Api tests/Templates -C
+        run: composer test
         working-directory: apps/backend
 
   node:
@@ -53,12 +53,8 @@ jobs:
         run: npm ci
         working-directory: apps/worker
 
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-        working-directory: apps/worker
-
-      - name: ESLint
-        run: npm run lint
+      - name: Typecheck + Lint
+        run: npm run check
         working-directory: apps/worker
 
       - name: Tests

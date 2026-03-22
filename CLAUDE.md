@@ -14,7 +14,26 @@
 - Git push/pull používá SSH alias `github-work` (nastavený v SSH config)
 - Při vytváření PR nebo interakci s GitHub API není potřeba přepínat účty — vše je automatické
 
-## Migrations
+## Commands
 
-- Phinx (PHP) — config v `apps/backend/db/phinx.php`, migrace v `apps/backend/db/migrations/`
-- Spuštění: `cd apps/backend && composer migrate`
+All commands MUST be run via composer/npm scripts. Never call vendor/bin/* or npx directly.
+
+### Backend (apps/backend/)
+
+- `composer test` — run tests (Nette Tester)
+- `composer phpstan` — static analysis
+- `composer cs-check` — coding standard check
+- `composer cs-fix` — auto-fix coding standard
+- `composer check` — run all checks (test + phpstan + cs-check)
+- `composer migrate` — run DB migrations (Phinx)
+- `composer migrate:status` — migration status
+- `composer migrate:rollback` — rollback last migration
+
+### Worker (apps/worker/)
+
+- `npm test` — run tests (Vitest)
+- `npm run typecheck` — TypeScript type check
+- `npm run lint` — ESLint
+- `npm run check` — run all checks (typecheck + lint)
+- `npm run build` — build for production
+- `npm run dev` — run in development mode
