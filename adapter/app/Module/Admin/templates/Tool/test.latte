@@ -27,8 +27,29 @@
                         <label class="form-label" for="{$form['service_account_id']->htmlId}">Service Account</label>
                         {input service_account_id, class => 'form-select'}
                     </div>
+                    {if $inputSchema && isset($inputSchema['properties']) && count($inputSchema['properties']) > 0}
                     <div class="mb-3">
-                        <label class="form-label" for="{$form['payload']->htmlId}">Payload (JSON)</label>
+                        <label class="form-label">Parametry</label>
+                        <div class="border rounded p-3" id="schema-fields">
+                            {var $required = $inputSchema['required'] ?? []}
+                            {foreach $inputSchema['properties'] as $key => $prop}
+                            <div class="mb-2">
+                                <label class="form-label mb-0">
+                                    <code>{$key}</code>
+                                    {if in_array($key, $required)}<span class="text-danger">*</span>{/if}
+                                    {if isset($prop['description'])}<small class="text-secondary ms-1">— {$prop['description']}</small>{/if}
+                                </label>
+                                <input type="text" class="form-control form-control-sm schema-field" data-key="{$key}" placeholder="{$prop['description'] ?? $key}">
+                            </div>
+                            {/foreach}
+                        </div>
+                    </div>
+                    {/if}
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['payload']->htmlId}">
+                            Payload (JSON)
+                            {if $inputSchema}<small class="text-secondary">— vyplňuje se automaticky z parametrů výše</small>{/if}
+                        </label>
                         {input payload}
                     </div>
                     {if $form->hasErrors()}
@@ -45,7 +66,7 @@
             </div>
         </div>
     </div>
-    {if $inputSchema}
+    {if $inputSchema && isset($inputSchema['properties'])}
     <div class="col-lg-4">
         <div class="card">
             <div class="card-header">
@@ -56,7 +77,7 @@
                     <thead><tr><th>Pole</th><th>Typ</th><th>Popis</th><th></th></tr></thead>
                     <tbody>
                     {var $required = $inputSchema['required'] ?? []}
-                    {foreach $inputSchema['properties'] ?? [] as $key => $prop}
+                    {foreach $inputSchema['properties'] as $key => $prop}
                         <tr>
                             <td><code>{$key}</code></td>
                             <td class="text-secondary">{$prop['type'] ?? '?'}</td>
@@ -71,4 +92,40 @@
     </div>
     {/if}
 </div>
+
+<script n:syntax="off">
+(function() {
+    var payloadField = document.querySelector('[name="payload"]');
+    var schemaFields = document.querySelectorAll('.schema-field');
+    if (schemaFields.length === 0) return;
+
+    function syncPayload() {
+        var obj = {};
+        schemaFields.forEach(function(input) {
+            var val = input.value.trim();
+            if (val) obj[input.dataset.key] = val;
+        });
+        payloadField.value = JSON.stringify(obj, null, 2);
+    }
+
+    schemaFields.forEach(function(input) {
+        input.addEventListener('input', syncPayload);
+    });
+
+    if (!payloadField.value.trim() || payloadField.value.trim() === '{}') {
+        syncPayload();
+    }
+
+    payloadField.addEventListener('input', function() {
+        try {
+            var obj = JSON.parse(payloadField.value);
+            schemaFields.forEach(function(input) {
+                if (obj[input.dataset.key] !== undefined) {
+                    input.value = String(obj[input.dataset.key]);
+                }
+            });
+        } catch (e) {}
+    });
+})();
+</script>
 {/block}

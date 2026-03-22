@@ -28,9 +28,18 @@
                         {if $isAdmin}
                             <div class="btn-list">
                                 {if $tool->is_active && !in_array($tool->name, $metaTools)}
-                                <a href="{plink test $tool->id}" class="btn btn-sm btn-outline-primary">
-                                    <i class="ti ti-player-play me-1"></i>Otestovat
-                                </a>
+                                    {if in_array($tool->name, $standaloneTools)}
+                                    <a href="{plink test $tool->id}" class="btn btn-sm btn-outline-primary">
+                                        <i class="ti ti-player-play me-1"></i>Otestovat
+                                    </a>
+                                    {elseif isset($toolPrerequisites[$tool->name])}
+                                    <form method="post" action="{plink createScenario! id => $tool->id}" class="d-inline">
+                                        <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                        <button type="submit" class="btn btn-sm btn-outline-purple">
+                                            <i class="ti ti-route me-1"></i>Vytvořit scénář
+                                        </button>
+                                    </form>
+                                    {/if}
                                 {/if}
                                 <form method="post" action="{plink toggle! id => $tool->id}" class="d-inline">
                                     <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
