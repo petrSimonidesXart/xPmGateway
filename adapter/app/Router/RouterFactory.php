@@ -15,6 +15,7 @@ class RouterFactory
         $router->addRoute('mcp', 'Mcp:Mcp:default');
 
         // REST API v1 for external integrations (ChatGPT Actions, Make.com, n8n)
+        $router->addRoute('api/v1/openapi-public.json', 'Api:V1:openapiPublic');
         $router->addRoute('api/v1/openapi.json', 'Api:V1:openapi');
         $router->addRoute('api/v1/tools/<toolName>', 'Api:V1:tool');
         $router->addRoute('api/v1/jobs/<id>', 'Api:V1:jobStatus');

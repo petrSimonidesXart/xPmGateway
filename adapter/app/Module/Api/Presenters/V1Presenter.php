@@ -35,20 +35,27 @@ class V1Presenter extends Presenter
 
 
 	/**
+	 * GET /api/v1/openapi-public.json
+	 * Public OpenAPI spec with all active tools + scenarios.
+	 * No authentication required — for ChatGPT Actions import.
+	 */
+	public function actionOpenapiPublic(): void
+	{
+		$this->requireMethod('GET');
+		$tools = $this->toolRepository->findAllActive();
+		$this->sendOpenapiSpec($tools, 'PM Gateway — Public');
+	}
+
+
+	/**
 	 * GET /api/v1/openapi.json
-	 * Dynamic OpenAPI spec based on the authenticated client's permissions.
-	 * Generates a ChatGPT Actions-compatible schema with only the tools
-	 * this client has permission to use. Updates automatically when
-	 * permissions change in Admin UI.
+	 * Authenticated OpenAPI spec filtered by client permissions.
 	 */
 	public function actionOpenapi(): void
 	{
 		$this->requireMethod('GET');
 		[$client, $token] = $this->authenticate();
 
-		$baseUrl = rtrim($this->getHttpRequest()->getUrl()->getBaseUrl(), '/');
-
-		// Get tools this client has access to
 		$permittedToolIds = $this->permissionRepository->getPermittedToolIds($client->id);
 		$allTools = $this->toolRepository->findAllActive();
 
@@ -59,7 +66,18 @@ class V1Presenter extends Presenter
 			}
 		}
 
-		// Build paths for permitted tools
+		$this->sendOpenapiSpec($tools, 'PM Gateway — ' . $client->name);
+	}
+
+
+	/**
+	 * Generate and send OpenAPI spec for given tools.
+	 */
+	private function sendOpenapiSpec(array $tools, string $title): void
+	{
+		$baseUrl = rtrim($this->getHttpRequest()->getUrl()->getBaseUrl(), '/');
+
+		// Build paths for tools
 		$paths = [];
 		$contractsDir = __DIR__ . '/../../../../../packages/contracts';
 		$hasArtifactTools = false;
@@ -322,8 +340,8 @@ class V1Presenter extends Presenter
 		$spec = [
 			'openapi' => '3.1.0',
 			'info' => [
-				'title' => 'PM Gateway — ' . $client->name,
-				'description' => 'API for client "' . $client->name . '". Shows only tools this client has permission to use.',
+				'title' => $title,
+				'description' => 'PM Gateway API. Tools and scenarios for PM automation.',
 				'version' => '1.0.0',
 			],
 			'servers' => [
