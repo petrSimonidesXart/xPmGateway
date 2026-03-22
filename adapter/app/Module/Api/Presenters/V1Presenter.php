@@ -136,11 +136,7 @@ class V1Presenter extends Presenter
 
 		// Add scenarios as API endpoints
 		$lookupHints = $this->buildLookupHints();
-		$runToolPermitted = isset($permittedToolIds[
-			$this->toolRepository->findByName('run_scenario')?->id ?? 0
-		]);
-
-		if ($runToolPermitted) {
+		{
 			$scenarios = $this->scenarioRepository->findAllActive();
 			foreach ($scenarios as $scenario) {
 				$inputSchema = json_decode($scenario->input_schema, true)
@@ -159,7 +155,7 @@ class V1Presenter extends Presenter
 							'required' => true,
 							'content' => [
 								'application/json' => [
-									'schema' => json_decode(json_encode($inputSchema)),
+									'schema' => $this->fixSchemaForOpenApi($inputSchema),
 								],
 							],
 						],
@@ -181,12 +177,12 @@ class V1Presenter extends Presenter
 			}
 		}
 
-		// Also enrich tool schemas with lookups
+		// Enrich tool schemas with lookups + fix empty properties
 		foreach ($paths as $path => &$methods) {
 			if (isset($methods['post']['requestBody']['content']['application/json']['schema'])) {
 				$schema = json_decode(json_encode($methods['post']['requestBody']['content']['application/json']['schema']), true);
 				$schema = $this->enrichSchemaWithLookups($schema, $lookupHints);
-				$methods['post']['requestBody']['content']['application/json']['schema'] = json_decode(json_encode($schema));
+				$methods['post']['requestBody']['content']['application/json']['schema'] = $this->fixSchemaForOpenApi($schema);
 			}
 		}
 		unset($methods);
@@ -589,6 +585,28 @@ class V1Presenter extends Presenter
 		}
 		unset($prop);
 
+		return $schema;
+	}
+
+
+	/**
+	 * Ensure schema properties is always a JSON object (not empty array).
+	 * PHP's json_encode turns [] into JSON array, but OpenAPI needs {}.
+	 */
+	private function fixSchemaForOpenApi(mixed $schema): mixed
+	{
+		if ($schema instanceof \stdClass) {
+			if (isset($schema->properties) && $schema->properties === []) {
+				$schema->properties = new \stdClass;
+			}
+			return $schema;
+		}
+		if (is_array($schema)) {
+			if (isset($schema['properties']) && $schema['properties'] === []) {
+				$schema['properties'] = new \stdClass;
+			}
+			return json_decode(json_encode($schema));
+		}
 		return $schema;
 	}
 }
