@@ -7,68 +7,209 @@ use Tester\Assert;
 require __DIR__ . '/../bootstrap.php';
 
 
-test('validates valid create_task input', function () {
+// -- pm_create_comment --
+
+test('validates valid pm_create_comment input', function () {
 	$validator = new SchemaValidator();
 
 	$errors = $validator->validate([
-		'title' => 'Test task',
-		'project' => 'My Project',
-	], 'create-task.input.json');
+		'text' => 'Tohle je komentář',
+	], 'pm-create-comment.input.json');
 
 	Assert::null($errors);
 });
 
 
-test('validates create_task with all optional fields', function () {
+test('rejects pm_create_comment without required text', function () {
 	$validator = new SchemaValidator();
 
-	$errors = $validator->validate([
-		'title' => 'Test task',
-		'project' => 'My Project',
-		'assignee' => 'John',
-		'due_date' => '2026-12-31',
-		'estimate_hours' => 8,
-	], 'create-task.input.json');
-
-	Assert::null($errors);
-});
-
-
-test('rejects create_task without required title', function () {
-	$validator = new SchemaValidator();
-
-	$errors = $validator->validate([
-		'project' => 'My Project',
-	], 'create-task.input.json');
+	$errors = $validator->validate([], 'pm-create-comment.input.json');
 
 	Assert::notNull($errors);
 	Assert::true(count($errors) > 0);
 });
 
 
-test('rejects create_task without required project', function () {
+test('rejects pm_create_comment with empty text', function () {
 	$validator = new SchemaValidator();
 
 	$errors = $validator->validate([
-		'title' => 'Test task',
-	], 'create-task.input.json');
+		'text' => '',
+	], 'pm-create-comment.input.json');
 
 	Assert::notNull($errors);
 });
 
 
-test('rejects create_task with additional properties', function () {
+test('rejects pm_create_comment with additional properties', function () {
 	$validator = new SchemaValidator();
 
 	$errors = $validator->validate([
-		'title' => 'Test task',
-		'project' => 'My Project',
+		'text' => 'Komentář',
 		'unknown_field' => 'value',
-	], 'create-task.input.json');
+	], 'pm-create-comment.input.json');
 
 	Assert::notNull($errors);
 });
 
+
+// -- pm_open_project --
+
+test('validates valid pm_open_project input', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'query' => 'Název projektu',
+	], 'pm-open-project.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('rejects pm_open_project without query', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([], 'pm-open-project.input.json');
+
+	Assert::notNull($errors);
+});
+
+
+// -- pm_create_subtask --
+
+test('validates pm_create_subtask with required fields only', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'name' => 'Nový podúkol',
+	], 'pm-create-subtask.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('validates pm_create_subtask with all optional fields', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'name' => 'Nový podúkol',
+		'assignee' => 'PS',
+		'label' => 'RESIT',
+		'schedule' => 'this_week',
+		'estimate' => '2',
+	], 'pm-create-subtask.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('rejects pm_create_subtask without name', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'assignee' => 'PS',
+	], 'pm-create-subtask.input.json');
+
+	Assert::notNull($errors);
+});
+
+
+// -- pm_time_track --
+
+test('validates valid pm_time_track input', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'hours' => 2.5,
+		'date' => '2026-03-22',
+	], 'pm-time-track.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('validates pm_time_track with optional note', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'hours' => 1,
+		'date' => '2026-03-22',
+		'note' => 'Práce na refaktoru',
+	], 'pm-time-track.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('rejects pm_time_track without hours', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'date' => '2026-03-22',
+	], 'pm-time-track.input.json');
+
+	Assert::notNull($errors);
+});
+
+
+test('rejects pm_time_track without date', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'hours' => 2,
+	], 'pm-time-track.input.json');
+
+	Assert::notNull($errors);
+});
+
+
+// -- pm_export_csv --
+
+test('validates valid pm_export_csv input', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'type' => 'tasks',
+	], 'pm-export-csv.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('rejects pm_export_csv with invalid type', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'type' => 'invalid',
+	], 'pm-export-csv.input.json');
+
+	Assert::notNull($errors);
+});
+
+
+// -- pm_login --
+
+test('validates pm_login accepts empty input', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([], 'pm-login.input.json');
+
+	Assert::null($errors);
+});
+
+
+test('rejects pm_login with additional properties', function () {
+	$validator = new SchemaValidator();
+
+	$errors = $validator->validate([
+		'username' => 'test',
+	], 'pm-login.input.json');
+
+	Assert::notNull($errors);
+});
+
+
+// -- get_job_status --
 
 test('validates valid get_job_status input', function () {
 	$validator = new SchemaValidator();
@@ -90,18 +231,17 @@ test('rejects get_job_status without job_id', function () {
 });
 
 
+// -- list_my_recent_jobs --
+
 test('validates valid list_my_recent_jobs input', function () {
 	$validator = new SchemaValidator();
 
-	// Empty is valid (all optional)
 	$errors = $validator->validate([], 'list-my-recent-jobs.input.json');
 	Assert::null($errors);
 
-	// With all fields
 	$errors = $validator->validate([
 		'limit' => 20,
 		'status' => 'pending',
-		'tool_name' => 'create_task',
 	], 'list-my-recent-jobs.input.json');
 	Assert::null($errors);
 });
@@ -128,6 +268,8 @@ test('rejects list_my_recent_jobs with invalid status', function () {
 	Assert::notNull($errors);
 });
 
+
+// -- edge cases --
 
 test('returns error for missing schema file', function () {
 	$validator = new SchemaValidator();

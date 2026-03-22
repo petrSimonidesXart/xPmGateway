@@ -291,7 +291,7 @@ function createFacade(array $overrides = []): array
 
 $client = mockRow(['id' => 1, 'name' => 'TestClient', 'service_account_id' => 1]);
 $token = mockRow(['id' => 100]);
-$activeTool = mockRow(['id' => 5, 'name' => 'create_task', 'is_active' => true]);
+$activeTool = mockRow(['id' => 5, 'name' => 'pm_create_comment', 'is_active' => true]);
 
 
 // === Error path tests ===
@@ -300,7 +300,7 @@ test('rate limit exceeded throws 429', function () use ($client, $token) {
 	[$facade] = createFacade(['rateLimitRemaining' => -1]);
 
 	Assert::exception(
-		fn() => $facade->handleToolCall($client, $token, 'create_task', [], '127.0.0.1'),
+		fn() => $facade->handleToolCall($client, $token, 'pm_create_comment', [], '127.0.0.1'),
 		McpException::class,
 		'Rate limit exceeded',
 	);
@@ -320,11 +320,11 @@ test('unknown tool throws 404', function () use ($client, $token) {
 
 test('inactive tool throws 404', function () use ($client, $token) {
 	[$facade] = createFacade([
-		'tool' => mockRow(['id' => 5, 'name' => 'create_task', 'is_active' => false]),
+		'tool' => mockRow(['id' => 5, 'name' => 'pm_create_comment', 'is_active' => false]),
 	]);
 
 	Assert::exception(
-		fn() => $facade->handleToolCall($client, $token, 'create_task', [], '127.0.0.1'),
+		fn() => $facade->handleToolCall($client, $token, 'pm_create_comment', [], '127.0.0.1'),
 		McpException::class,
 		'Unknown tool',
 	);
@@ -338,7 +338,7 @@ test('permission denied for non-meta tool throws 403', function () use ($client,
 	]);
 
 	Assert::exception(
-		fn() => $facade->handleToolCall($client, $token, 'create_task', [], '127.0.0.1'),
+		fn() => $facade->handleToolCall($client, $token, 'pm_create_comment', [], '127.0.0.1'),
 		McpException::class,
 		'Permission denied for this tool',
 	);
@@ -374,7 +374,7 @@ test('IP not allowed throws 403', function () use ($client, $token, $activeTool)
 	]);
 
 	Assert::exception(
-		fn() => $facade->handleToolCall($client, $token, 'create_task', [], '127.0.0.1'),
+		fn() => $facade->handleToolCall($client, $token, 'pm_create_comment', [], '127.0.0.1'),
 		McpException::class,
 		'IP not allowed',
 	);
@@ -384,13 +384,13 @@ test('IP not allowed throws 403', function () use ($client, $token, $activeTool)
 test('schema validation failure throws 422', function () use ($client, $token, $activeTool) {
 	[$facade] = createFacade([
 		'tool' => $activeTool,
-		'validationErrors' => ['title: field is required'],
+		'validationErrors' => ['text: field is required'],
 	]);
 
 	Assert::exception(
-		fn() => $facade->handleToolCall($client, $token, 'create_task', [], '127.0.0.1'),
+		fn() => $facade->handleToolCall($client, $token, 'pm_create_comment', [], '127.0.0.1'),
 		McpException::class,
-		'Validation failed: title: field is required',
+		'Validation failed: text: field is required',
 	);
 });
 
@@ -409,7 +409,7 @@ test('generic tool completed within timeout returns mode done', function () use 
 		'completedJob' => $completedJob,
 	]);
 
-	$result = $facade->handleToolCall($client, $token, 'create_task', ['title' => 'Test', 'project' => 'Proj'], '127.0.0.1');
+	$result = $facade->handleToolCall($client, $token, 'pm_create_comment', ['text' => 'Test komentář'], '127.0.0.1');
 
 	Assert::same('done', $result['mode']);
 	Assert::same('success', $result['status']);
@@ -423,7 +423,7 @@ test('generic tool not completed returns mode queued', function () use ($client,
 		'completedJob' => null,
 	]);
 
-	$result = $facade->handleToolCall($client, $token, 'create_task', ['title' => 'Test', 'project' => 'Proj'], '127.0.0.1');
+	$result = $facade->handleToolCall($client, $token, 'pm_create_comment', ['text' => 'Test komentář'], '127.0.0.1');
 
 	Assert::same('queued', $result['mode']);
 	Assert::same('pending', $result['status']);
@@ -463,7 +463,7 @@ test('audit service is called on every tool call', function () use ($client, $to
 		'completedJob' => null,
 	]);
 
-	$facade->handleToolCall($client, $token, 'create_task', ['title' => 'T', 'project' => 'P'], '127.0.0.1');
+	$facade->handleToolCall($client, $token, 'pm_create_comment', ['text' => 'Test'], '127.0.0.1');
 
 	Assert::true($audit->callCount >= 1);
 });
