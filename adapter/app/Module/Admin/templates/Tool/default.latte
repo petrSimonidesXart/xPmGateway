@@ -26,13 +26,20 @@
                     </td>
                     <td>
                         {if $isAdmin}
-                            <form method="post" action="{plink toggle! id => $tool->id}" class="d-inline">
-                                <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
-                                <button type="submit" n:class="btn, btn-sm, $tool->is_active ? btn-outline-warning : btn-outline-success"
-                                        onclick="return confirm('{if $tool->is_active}Opravdu deaktivovat {$tool->name}?{else}Aktivovat {$tool->name}?{/if}')">
-                                    {if $tool->is_active}Deaktivovat{else}Aktivovat{/if}
-                                </button>
-                            </form>
+                            <div class="btn-list">
+                                {if $tool->is_active && !in_array($tool->name, $metaTools)}
+                                <a href="{plink test $tool->id}" class="btn btn-sm btn-outline-primary">
+                                    <i class="ti ti-player-play me-1"></i>Otestovat
+                                </a>
+                                {/if}
+                                <form method="post" action="{plink toggle! id => $tool->id}" class="d-inline">
+                                    <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                    <button type="submit" n:class="btn, btn-sm, $tool->is_active ? btn-outline-warning : btn-outline-success"
+                                            onclick="return confirm('{if $tool->is_active}Opravdu deaktivovat {$tool->name}?{else}Aktivovat {$tool->name}?{/if}')">
+                                        {if $tool->is_active}Deaktivovat{else}Aktivovat{/if}
+                                    </button>
+                                </form>
+                            </div>
                         {/if}
                     </td>
                 </tr>

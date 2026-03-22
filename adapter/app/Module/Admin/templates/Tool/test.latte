@@ -1,0 +1,74 @@
+{block title}Test: {$tool->name}{/block}
+
+{block breadcrumb}
+<ol class="breadcrumb" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="{plink default}">Nástroje</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Test: {$tool->name}</li>
+</ol>
+{/block}
+
+{block content}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-player-play me-1"></i>Otestovat <code>{$tool->name}</code>
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary mb-3">{$tool->description}</p>
+                {form testForm}
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['client_id']->htmlId}">Klient</label>
+                        {input client_id, class => 'form-select'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['service_account_id']->htmlId}">Service Account</label>
+                        {input service_account_id, class => 'form-select'}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{$form['payload']->htmlId}">Payload (JSON)</label>
+                        {input payload}
+                    </div>
+                    {if $form->hasErrors()}
+                        <div class="alert alert-danger">
+                            {foreach $form->errors as $error}
+                                <div>{$error}</div>
+                            {/foreach}
+                        </div>
+                    {/if}
+                    <div class="d-flex justify-content-end">
+                        {input send, class => 'btn btn-primary'}
+                    </div>
+                {/form}
+            </div>
+        </div>
+    </div>
+    {if $inputSchema}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-info-circle me-1"></i>Schéma</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>Pole</th><th>Typ</th><th>Popis</th><th></th></tr></thead>
+                    <tbody>
+                    {var $required = $inputSchema['required'] ?? []}
+                    {foreach $inputSchema['properties'] ?? [] as $key => $prop}
+                        <tr>
+                            <td><code>{$key}</code></td>
+                            <td class="text-secondary">{$prop['type'] ?? '?'}</td>
+                            <td class="text-secondary small">{$prop['description'] ?? ''}</td>
+                            <td>{if in_array($key, $required)}<span class="badge bg-red-lt">povinné</span>{/if}</td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {/if}
+</div>
+{/block}

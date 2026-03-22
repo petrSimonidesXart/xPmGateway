@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Module\Admin\Presenters;
 
 use App\Model\Repository\ClientRepository;
+use App\Model\Repository\PmLookupRepository;
 use App\Model\Repository\ServiceAccountRepository;
 use App\Model\Service\EncryptionService;
 use Nette\Application\UI\Form;
@@ -13,6 +14,7 @@ class ServiceAccountPresenter extends BasePresenter
 	public function __construct(
 		private ServiceAccountRepository $serviceAccountRepository,
 		private ClientRepository $clientRepository,
+		private PmLookupRepository $lookupRepository,
 		private EncryptionService $encryptionService,
 	) {
 		parent::__construct();
@@ -63,9 +65,13 @@ class ServiceAccountPresenter extends BasePresenter
 		$form->addPassword('password', 'Heslo:')
 			->setRequired($this->getParameter('id') === null);
 
-		$form->addText('base_url', 'URL PM aplikace:')
-			->setRequired('Zadejte URL cílové PM aplikace.')
-			->setHtmlAttribute('placeholder', 'https://hirola.xart.cz/pmdev/public/');
+		$urlOptions = [];
+		foreach ($this->lookupRepository->getByCategory('pm_urls') as $shortcut => $data) {
+			$urlOptions[$data['value']] = $shortcut . ' — ' . $data['value'];
+		}
+		$form->addSelect('base_url', 'URL PM aplikace:', $urlOptions)
+			->setPrompt('— Vyber URL —')
+			->setRequired('Vyberte URL cílové PM aplikace.');
 
 		$form->addCheckbox('is_active', 'Aktivní')
 			->setDefaultValue(true);
