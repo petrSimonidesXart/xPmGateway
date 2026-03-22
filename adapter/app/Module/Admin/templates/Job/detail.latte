@@ -122,13 +122,52 @@
             </div>
         </div>
     </div>
+    {var $payloadData = json_decode($job->payload, true)}
+    {if isset($payloadData['input']) && isset($payloadData['scenario'])}
+    {* Scenario job — show input parameters prominently *}
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Payload</h3>
+            <div class="card-header d-flex align-items-center">
+                <h3 class="card-title"><i class="ti ti-forms me-1"></i>Vstupní parametry</h3>
+                {if isset($payloadData['scenario']['name'])}
+                <span class="badge bg-purple-lt ms-2">Scénář: {$payloadData['scenario']['name']}</span>
+                {/if}
             </div>
-            <div class="card-body">
-                <pre class="mb-0 pre-scroll"><code>{$job->payload}</code></pre>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-sm">
+                    <tbody>
+                    {foreach $payloadData['input'] as $key => $value}
+                        <tr>
+                            <td class="text-secondary fw-bold" style="width: 180px;">{$key}</td>
+                            <td>
+                                {if is_array($value)}
+                                    <pre class="mb-0 pre-scroll" style="max-height: 150px;"><code>{json_encode($value, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE)}</code></pre>
+                                {elseif is_bool($value)}
+                                    {if $value}<span class="badge bg-green">true</span>{else}<span class="badge bg-secondary">false</span>{/if}
+                                {else}
+                                    {$value}
+                                {/if}
+                            </td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {/if}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h3 class="card-title">Payload</h3>
+                <button class="btn btn-sm btn-ghost-secondary ms-auto" onclick="var el=document.getElementById('payload-raw');el.classList.toggle('d-none');">
+                    <i class="ti ti-code me-1"></i>{if isset($payloadData['input'])}Zobrazit JSON{else}Toggle{/if}
+                </button>
+            </div>
+            <div id="payload-raw" class="{if isset($payloadData['input'])}d-none{/if}">
+                <div class="card-body">
+                    <pre class="mb-0 pre-scroll"><code>{$job->payload}</code></pre>
+                </div>
             </div>
         </div>
     </div>
