@@ -36,4 +36,7 @@ INSERT INTO `pm_lookups` (`category`, `shortcut`, `value`, `description`, `sort_
 INSERT INTO `pm_lookups` (`category`, `shortcut`, `value`, `description`, `sort_order`) VALUES
     ('schedule', 'TT', 'this_week', 'Tento týden (pondělí–pátek)', 1),
     ('schedule', 'PT', 'next_week', 'Příští týden', 2),
-    ('schedule', 'PPT', 'after_next_week', 'Přespříští týden', 3);
+    ('schedule', 'PPT', 'after_next_week', 'Přespříští týden', 3),
+    ('schedule', 'DNES', 'today', 'Dnes', 4),
+    ('schedule', 'ZITRA', 'tomorrow', 'Zítra', 5),
+    ('schedule', 'POZITRI', 'day_after_tomorrow', 'Pozítří', 6);

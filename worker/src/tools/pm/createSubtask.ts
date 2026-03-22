@@ -91,6 +91,15 @@ export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, un
 			ctx.log(`Plánování: ${resolved} (zkratka ${upper})`);
 			schedule = resolved;
 		}
+
+		// Resolve relative dates to YYYY/MM/DD
+		const relDays: Record<string, number> = { today: 0, tomorrow: 1, day_after_tomorrow: 2 };
+		if (schedule in relDays) {
+			const d = new Date();
+			d.setDate(d.getDate() + relDays[schedule]);
+			schedule = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+			ctx.log(`Datum: ${schedule}`);
+		}
 	}
 	if (schedule) {
 		if (schedule === 'this_week') {

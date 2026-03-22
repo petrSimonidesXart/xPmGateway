@@ -45,6 +45,12 @@
                                     {if $scenario->is_active}Deaktivovat{else}Aktivovat{/if}
                                 </button>
                             </form>
+                            <form method="post" action="{plink delete! id => $scenario->id}" class="d-inline">
+                                <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Opravdu smazat scénář {$scenario->name}?')">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
                         </div>
                         {/if}
                     </td>

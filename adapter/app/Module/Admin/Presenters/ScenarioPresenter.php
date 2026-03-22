@@ -241,4 +241,37 @@ class ScenarioPresenter extends BasePresenter
 		$this->flashMessage($scenario->is_active ? 'Scénář deaktivován.' : 'Scénář aktivován.');
 		$this->redirect('this');
 	}
+
+
+	public function handleDelete(int $id): void
+	{
+		$this->requirePost();
+		$this->requireAdmin();
+
+		$scenario = $this->scenarioRepository->findById($id);
+		if (!$scenario) {
+			$this->error('Scénář nenalezen');
+		}
+
+		// Check if any jobs reference this scenario
+		$jobCount = $this->jobRepository->getTable()
+			->where('scenario_id', $id)
+			->count('*');
+
+		if ($jobCount > 0) {
+			// Unlink jobs first
+			$this->jobRepository->getTable()
+				->where('scenario_id', $id)
+				->update(['scenario_id' => null]);
+		}
+
+		$this->scenarioRepository->getTable()->where('id', $id)->delete();
+		$this->auditService->logAdminAction('scenario_deleted', 'success', [
+			'id' => $id,
+			'name' => $scenario->name,
+		]);
+
+		$this->flashMessage('Scénář smazán.');
+		$this->redirect('default');
+	}
 }

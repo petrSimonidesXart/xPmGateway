@@ -29,7 +29,7 @@
                             <form method="post" action="{plink toggle! id => $tool->id}" class="d-inline">
                                 <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
                                 <button type="submit" n:class="btn, btn-sm, $tool->is_active ? btn-outline-warning : btn-outline-success"
-                                        data-confirm="{if $tool->is_active}Opravdu deaktivovat nástroj {$tool->name}?{else}Aktivovat nástroj {$tool->name}?{/if}">
+                                        onclick="return confirm('{if $tool->is_active}Opravdu deaktivovat {$tool->name}?{else}Aktivovat {$tool->name}?{/if}')">
                                     {if $tool->is_active}Deaktivovat{else}Aktivovat{/if}
                                 </button>
                             </form>
