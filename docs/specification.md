@@ -131,8 +131,8 @@ Kořenový `.htaccess` směruje požadavky do odpovídajících adresářů.
 
 ```
 xPmGateway/
-├── .htaccess                        -- routing do adapter/www
-├── adapter/
+├── .htaccess                        -- routing do apps/backend/www
+├── apps/backend/
 │   ├── app/
 │   │   ├── Bootstrap.php
 │   │   ├── Model/
@@ -159,7 +159,7 @@ xPmGateway/
 │   ├── config/
 │   │   ├── common.neon
 │   │   ├── local.neon               -- .gitignore, z .env
-│   │   ├── local.neon.template
+│   │   ├── local.neon.example
 │   │   └── services.neon
 │   ├── migrations/
 │   ├── storage/
@@ -169,10 +169,10 @@ xPmGateway/
 │   │   ├── index.php
 │   │   ├── .htaccess
 │   │   └── assets/                  -- CSS/JS (Naja)
-│   ├── .env.template
+│   ├── .env.example
 │   └── composer.json
 │
-├── worker/
+├── apps/worker/
 │   ├── src/
 │   │   ├── index.ts
 │   │   ├── handlers/
@@ -181,7 +181,7 @@ xPmGateway/
 │   │       ├── api.ts
 │   │       ├── auth.ts
 │   │       └── screenshots.ts
-│   ├── .env.template
+│   ├── .env.example
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -200,7 +200,7 @@ xPmGateway/
 └── README.md
 ```
 
-Kořenový `.htaccess` přesměruje všechny HTTP požadavky do `adapter/www/`,
+Kořenový `.htaccess` přesměruje všechny HTTP požadavky do `apps/backend/www/`,
 který je vstupním bodem Nette aplikace. Ostatní adresáře (worker, packages,
 docs) nejsou přes web přístupné.
 
@@ -528,7 +528,7 @@ Adapter nikdy přímo neprovádí UI automatizaci.
 ## 11.2 Struktura
 
 ```
-worker/
+apps/worker/
   src/
     index.ts            — polling loop, orchestrace
     handlers/
@@ -581,7 +581,7 @@ Ukládání:
 -   Možnost revokace tokenů
 -   Worker a PM systém nejsou veřejně dostupné
 -   Service account hesla šifrovaná (AES-256), klíč v env
--   Kořenový `.htaccess` zajišťuje, že přes web je přístupný pouze `adapter/www/`
+-   Kořenový `.htaccess` zajišťuje, že přes web je přístupný pouze `apps/backend/www/`
 
 ## 12.1 Rate limiting
 

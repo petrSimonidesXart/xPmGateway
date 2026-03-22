@@ -1,16 +1,18 @@
 # PHP
-/adapter/vendor/
-/adapter/storage/temp/
-/adapter/storage/log/*
-!/adapter/storage/log/.gitkeep
-/adapter/storage/screenshots/*
-!/adapter/storage/screenshots/.gitkeep
-/adapter/config/local.neon
+/apps/backend/vendor/
+/apps/backend/storage/temp/
+/apps/backend/storage/log/*
+!/apps/backend/storage/log/.gitkeep
+/apps/backend/storage/screenshots/*
+!/apps/backend/storage/screenshots/.gitkeep
+/apps/backend/storage/artifacts/
+/apps/backend/storage/ui-review/
+/apps/backend/config/local.neon
 
 # Node.js
-/worker/node_modules/
-/worker/dist/
-/worker/.env
+/apps/worker/node_modules/
+/apps/worker/dist/
+/apps/worker/.env
 
 # Environment files
 .env
@@ -19,6 +21,7 @@
 .idea/
 .vscode/
 *.swp
+*.swo
 
 # Claude Code
 .claude/settings.local.json

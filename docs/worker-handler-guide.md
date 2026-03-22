@@ -53,7 +53,7 @@ Viz [Contracts dokumentace](contracts.md).
 
 ### 2. Vytvořte handler
 
-`worker/src/handlers/myNewTool.ts`:
+`apps/worker/src/handlers/myNewTool.ts`:
 
 ```typescript
 import { chromium } from 'playwright';
@@ -98,7 +98,7 @@ export async function handleMyNewTool(job: Job, api: AdapterApi): Promise<void> 
 
 ### 3. Zaregistrujte handler
 
-V `worker/src/index.ts` přidejte import a registraci:
+V `apps/worker/src/index.ts` přidejte import a registraci:
 
 ```typescript
 import { handleMyNewTool } from './handlers/myNewTool.js';

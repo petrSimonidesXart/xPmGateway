@@ -125,4 +125,4 @@ const { title, project } = job.payload as { title: string; project: string };
 1. Vytvořte `{tool-name}.input.json` a `{tool-name}.output.json`
 2. Dodržujte pravidla výše
 3. Adapter automaticky najde schéma podle názvu toolu
-4. Spusťte testy: `cd adapter && composer test` (SchemaValidator.phpt ověří základní validaci)
+4. Spusťte testy: `cd apps/backend && composer test` (SchemaValidator.phpt ověří základní validaci)

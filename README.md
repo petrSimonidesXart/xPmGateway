@@ -21,19 +21,21 @@ AI Clients (MCP/REST) → Gateway (PHP/Nette) → Job Queue (MariaDB) → Worker
 ddev start
 ```
 
-### Adapter (PHP)
+### Backend (PHP)
 
 ```bash
-cd adapter
-cp .env.template .env
-cp config/local.neon.template config/local.neon
-ddev composer install -d adapter
+cd apps/backend
+cp .env.example .env
+cp config/local.neon.example config/local.neon
+ddev composer install -d apps/backend
 ```
 
-Run all migrations:
+Run migrations:
 
 ```bash
-for f in adapter/migrations/*.sql; do ddev mysql -D pm_gateway < "$f"; done
+cd apps/backend
+ddev exec "cd /var/www/html/apps/backend && vendor/bin/phinx migrate"
+ddev exec "cd /var/www/html/apps/backend && vendor/bin/phinx seed:run"
 ```
 
 Default admin login: `admin` / `admin123` (change immediately).
@@ -41,8 +43,8 @@ Default admin login: `admin` / `admin123` (change immediately).
 ### Worker (Node.js)
 
 ```bash
-cd worker
-cp .env.template .env
+cd apps/worker
+cp .env.example .env
 npm install
 npx playwright install chromium
 npx playwright install-deps chromium
@@ -55,26 +57,27 @@ npm run build && npm start  # production
 
 ```
 xPmGateway/
-├── adapter/              PHP/Nette — MCP Gateway + REST API + Admin UI
-│   ├── app/Module/
-│   │   ├── Admin/        Admin UI (presenters + Latte templates)
-│   │   ├── Mcp/          MCP JSON-RPC endpoint
-│   │   ├── Api/          REST API v1 (OpenAPI/ChatGPT Actions)
-│   │   └── Internal/     Internal API for worker
-│   ├── migrations/       SQL migrations (001–011)
-│   └── scripts/          Test & maintenance scripts
-├── worker/               Node.js/Playwright — browser automation
-│   └── src/
-│       ├── tools/        Tool infrastructure
-│       │   ├── pm/       PM tool implementations (14 tools)
-│       │   ├── registry.ts
-│       │   ├── scenarioRunner.ts
-│       │   ├── standaloneRunner.ts
-│       │   └── templateParser.ts
-│       └── lib/          Shared utilities (API client, auth, video)
+├── apps/
+│   ├── backend/              PHP/Nette — MCP Gateway + REST API + Admin UI
+│   │   ├── app/Module/
+│   │   │   ├── Admin/        Admin UI (presenters + Latte templates)
+│   │   │   ├── Mcp/          MCP JSON-RPC endpoint
+│   │   │   ├── Api/          REST API v1 (OpenAPI/ChatGPT Actions)
+│   │   │   └── Internal/     Internal API for worker
+│   │   ├── db/migrations/    Phinx migrations
+│   │   └── scripts/          Test & maintenance scripts
+│   └── worker/               Node.js/Playwright — browser automation
+│       └── src/
+│           ├── tools/        Tool infrastructure
+│           │   ├── pm/       PM tool implementations (14 tools)
+│           │   ├── registry.ts
+│           │   ├── scenarioRunner.ts
+│           │   ├── standaloneRunner.ts
+│           │   └── templateParser.ts
+│           └── lib/          Shared utilities (API client, auth, video)
 ├── packages/
-│   └── contracts/        JSON Schema input contracts
-└── docs/                 Documentation
+│   └── contracts/            JSON Schema input contracts
+└── docs/                     Documentation
 ```
 
 ## Documentation
@@ -83,6 +86,7 @@ xPmGateway/
 - **[Scenarios](docs/scenarios.md)** — how to create and use scenarios
 - **[Worker Handler Guide](docs/worker-handler-guide.md)** — how to write a Playwright handler
 - **[Contracts](docs/contracts.md)** — JSON Schema conventions
+- **[Backlog](docs/BACKLOG.md)** — project backlog with milestones
 
 ## PM Tools
 
@@ -161,15 +165,15 @@ Available at `/admin/` with session-based authentication.
 ## Quality & Testing
 
 ```bash
-# Adapter (PHP)
-cd adapter
+# Backend (PHP)
+cd apps/backend
 composer check    # tests + PHPStan + PHPCS
 
 # Worker (Node.js)
-cd worker
+cd apps/worker
 npm run check     # TypeScript + ESLint
 npm test          # Vitest
 
 # MCP integration test
-ddev exec "cd /var/www/html/adapter && bash scripts/test-mcp.sh"
+ddev exec "cd /var/www/html/apps/backend && bash scripts/test-mcp.sh"
 ```
