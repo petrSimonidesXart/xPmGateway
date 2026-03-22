@@ -16,5 +16,5 @@
 
 ## Migrations
 
-- Phinx (PHP) — config v `apps/backend/phinx.php`, migrace v `apps/backend/db/migrations/`
+- Phinx (PHP) — config v `apps/backend/db/phinx.php`, migrace v `apps/backend/db/migrations/`
 - Spuštění: `cd apps/backend && composer migrate`

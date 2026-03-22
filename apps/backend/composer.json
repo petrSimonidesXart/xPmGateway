@@ -42,10 +42,10 @@
             "@phpstan",
             "@cs-check"
         ],
-        "migrate": "phinx migrate -c phinx.php",
-        "migrate:status": "phinx status -c phinx.php",
-        "migrate:rollback": "phinx rollback -c phinx.php",
-        "seed": "phinx seed:run -c phinx.php"
+        "migrate": "phinx migrate -c db/phinx.php",
+        "migrate:status": "phinx status -c db/phinx.php",
+        "migrate:rollback": "phinx rollback -c db/phinx.php",
+        "seed": "phinx seed:run -c db/phinx.php"
     },
     "config": {
         "allow-plugins": {
