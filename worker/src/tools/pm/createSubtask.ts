@@ -113,9 +113,9 @@ export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, un
 			await ctx.page.locator('#scheduleAfterNextWeek').click().catch(() => ctx.log('Tlačítko #scheduleAfterNextWeek nenalezeno'));
 		} else {
 			ctx.log(`Nastavuji termín: ${schedule}`);
-			const dueField = ctx.page.locator('[id$="_due_on"]');
+			const dueField = ctx.page.locator('input[name$="[due_on]"]');
 			if (await dueField.count() > 0) {
-				await dueField.fill(schedule);
+				await dueField.first().fill(schedule);
 			} else {
 				ctx.log('Pole pro termín nenalezeno — přeskakuji');
 			}
@@ -123,12 +123,12 @@ export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, un
 	}
 
 	if (input.schedule_from) {
-		const fromField = ctx.page.locator('[id$="_start_on"]');
-		if (await fromField.count() > 0) await fromField.fill(String(input.schedule_from));
+		const fromField = ctx.page.locator('input[name$="[start_on]"]');
+		if (await fromField.count() > 0) await fromField.first().fill(String(input.schedule_from));
 	}
 	if (input.schedule_to) {
-		const toField = ctx.page.locator('[id$="_due_on"]');
-		if (await toField.count() > 0) await toField.fill(String(input.schedule_to));
+		const toField = ctx.page.locator('input[name$="[due_on]"]');
+		if (await toField.count() > 0) await toField.first().fill(String(input.schedule_to));
 	}
 
 	// Estimate
