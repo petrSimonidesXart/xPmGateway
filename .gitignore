@@ -18,6 +18,7 @@
 .env
 
 # IDE
+.idea
 .idea/
 .vscode/
 *.swp
@@ -25,3 +26,18 @@
 
 # Claude Code
 .claude/settings.local.json
+.claude/settings.json
+.claude/skills
+
+# Local config
+.mcp.json
+
+# System / dotfiles
+.bash_profile
+.bashrc
+.gitconfig
+.gitmodules
+.profile
+.ripgreprc
+.zprofile
+.zshrc
