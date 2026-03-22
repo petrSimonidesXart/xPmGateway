@@ -33,7 +33,15 @@
                     </td>
                     <td class="text-secondary">{if $adminUser->last_login_at}{$adminUser->last_login_at|date:'d.m.Y H:i'}{else}—{/if}</td>
                     <td>
-                        <a href="{plink edit $adminUser->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
+                        <div class="btn-list">
+                            <a href="{plink edit $adminUser->id}" class="btn btn-sm btn-outline-secondary">Upravit</a>
+                            <form method="post" action="{plink delete! $adminUser->id}" class="d-inline">
+                                <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Opravdu smazat uživatele {$adminUser->username}?')">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             {else}

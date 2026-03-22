@@ -105,4 +105,26 @@ class UserPresenter extends BasePresenter
 
 		$this->redirect('default');
 	}
+
+
+	public function handleDelete(int $id): void
+	{
+		$this->requirePost();
+
+		$user = $this->adminUserRepository->findById($id);
+		if (!$user) {
+			$this->error('Uživatel nenalezen');
+		}
+
+		// Prevent deleting yourself
+		if ($user->id === $this->getUser()->getId()) {
+			$this->flashMessage('Nelze smazat vlastní účet.', 'warning');
+			$this->redirect('this');
+		}
+
+		$this->adminUserRepository->getTable()->where('id', $id)->delete();
+		$this->auditService->logAdminAction('admin_user_deleted', 'success', ['id' => $id, 'username' => $user->username]);
+		$this->flashMessage('Uživatel smazán.');
+		$this->redirect('default');
+	}
 }

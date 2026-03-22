@@ -132,4 +132,29 @@ class ClientPresenter extends BasePresenter
 
 		$this->redirect('detail', ['id' => $id]);
 	}
+
+
+	public function handleDelete(int $id): void
+	{
+		$this->requirePost();
+		$this->requireAdmin();
+
+		$client = $this->clientRepository->findById($id);
+		if (!$client) {
+			$this->error('Klient nenalezen');
+		}
+
+		// Delete permissions, tokens, then client
+		$this->permissionRepository->getTable()->where('client_id', $id)->delete();
+
+		$db = $this->clientRepository->getTable()->getConnection();
+		$db->table('api_tokens')->where('client_id', $id)->delete();
+		$db->table('jobs')->where('client_id', $id)->update(['client_id' => null]);
+
+		$this->clientRepository->getTable()->where('id', $id)->delete();
+
+		$this->auditService->logAdminAction('client_deleted', 'success', ['id' => $id, 'name' => $client->name]);
+		$this->flashMessage('Klient smazán.');
+		$this->redirect('default');
+	}
 }
