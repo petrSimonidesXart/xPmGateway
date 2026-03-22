@@ -42,8 +42,9 @@ class V1Presenter extends Presenter
 	public function actionOpenapiPublic(): void
 	{
 		$this->requireMethod('GET');
-		$tools = $this->toolRepository->findAllActive();
-		$this->sendOpenapiSpec($tools, 'PM Gateway — Public');
+		// Public spec: only meta-tools (job status, list) — no individual PM tools
+		$tools = [];
+		$this->sendOpenapiSpec($tools, 'PM Gateway');
 	}
 
 
