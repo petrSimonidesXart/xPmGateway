@@ -43,6 +43,7 @@ class JobFacade
 			'service_account' => [
 				'username' => $serviceAccount->username,
 				'password' => $this->encryptionService->decrypt($serviceAccount->password_encrypted),
+				'base_url' => $serviceAccount->base_url,
 			],
 			'attempt' => $job->attempts,
 			'timeout_seconds' => $job->timeout_seconds,

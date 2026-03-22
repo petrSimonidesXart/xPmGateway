@@ -48,4 +48,29 @@ class SchemaValidator
 			array_values($errors),
 		));
 	}
+
+
+	/**
+	 * Validate data against a raw JSON Schema array (not from file).
+	 */
+	public function validateRaw(array $data, array $schema): ?array
+	{
+		$schemaContent = json_decode(json_encode($schema));
+		$dataObject = json_decode(json_encode($data ?: new \stdClass));
+
+		$result = $this->validator->validate($dataObject, $schemaContent);
+
+		if ($result->isValid()) {
+			return null;
+		}
+
+		$formatter = new ErrorFormatter;
+		$errors = $formatter->format($result->error());
+
+		return array_values(array_map(
+			fn($key, $messages) => $key . ': ' . implode(', ', $messages),
+			array_keys($errors),
+			array_values($errors),
+		));
+	}
 }

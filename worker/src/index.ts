@@ -18,6 +18,7 @@ export interface Job {
     service_account: {
         username: string;
         password: string;
+        base_url?: string;
     };
     attempt: number;
     timeout_seconds: number;

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Model\Facade;
 
+use App\Model\Repository\ScenarioRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\ArtifactService;
 use App\Model\Service\AuditService;
@@ -21,6 +22,7 @@ class McpFacade
 		private RateLimitService $rateLimitService,
 		private SchemaValidator $schemaValidator,
 		private ToolRepository $toolRepository,
+		private ScenarioRepository $scenarioRepository,
 		private ArtifactService $artifactService,
 	) {
 	}
@@ -45,6 +47,11 @@ class McpFacade
 		if ($remaining < 0) {
 			$this->auditService->logMcpCall($client, $token, $toolName, 'rate_limited');
 			throw new McpException('Rate limit exceeded', 429);
+		}
+
+		// Handle scenario_ prefixed tools
+		if (str_starts_with($toolName, 'scenario_')) {
+			return $this->handleScenarioCall($client, $token, $toolName, $params, $clientIp, $startTime);
 		}
 
 		// Find tool
@@ -79,7 +86,6 @@ class McpFacade
 
 		// Dispatch based on tool
 		$result = match ($toolName) {
-			'create_task' => $this->handleCreateTask($client, $token, $params),
 			'get_job_status' => $this->handleGetJobStatus($client, $token, $params),
 			'list_my_recent_jobs' => $this->handleListRecentJobs($client, $token, $params),
 			default => $this->handleGenericTool($client, $token, $tool, $params),
@@ -220,6 +226,95 @@ class McpFacade
 			'job_id' => $job->id,
 			'status' => $completed?->status ?? 'pending',
 		];
+	}
+
+
+	/**
+	 * Handle scenario_* tool calls from MCP.
+	 * Looks up scenario by name, creates run_scenario job with full definition.
+	 */
+	private function handleScenarioCall(
+		ActiveRow $client,
+		ActiveRow $token,
+		string $toolName,
+		array $params,
+		string $clientIp,
+		float $startTime,
+	): array
+	{
+		$scenarioName = substr($toolName, strlen('scenario_'));
+		$scenario = $this->scenarioRepository->findByName($scenarioName);
+
+		if (!$scenario || !$scenario->is_active) {
+			$this->auditService->logMcpCall($client, $token, $toolName, 'denied');
+			throw new McpException("Scenario not found: {$scenarioName}", 404);
+		}
+
+		// Check IP
+		if (!$this->authService->isIpAllowed($client, $clientIp)) {
+			throw new McpException('IP not allowed', 403);
+		}
+
+		// Check permission for run_scenario tool
+		$runTool = $this->toolRepository->findByName('run_scenario');
+		if ($runTool && !$this->authService->hasToolPermission($client->id, $runTool->id)) {
+			$this->auditService->logMcpCall($client, $token, $toolName, 'denied');
+			throw new McpException('Permission denied for scenarios', 403);
+		}
+
+		// Validate input against scenario's schema
+		$inputSchema = json_decode($scenario->input_schema, true);
+		if ($inputSchema && !empty($inputSchema['properties'])) {
+			$errors = $this->schemaValidator->validateRaw($params, $inputSchema);
+			if ($errors !== null) {
+				throw new McpException('Validation failed: ' . implode('; ', $errors), 422);
+			}
+		}
+
+		// Build payload
+		$payload = [
+			'scenario' => [
+				'name' => $scenario->name,
+				'description' => $scenario->description,
+				'input_schema' => json_decode($scenario->input_schema, true),
+				'steps' => json_decode($scenario->steps, true),
+			],
+			'input' => $params,
+		];
+
+		$job = $this->jobService->createJob(
+			$client->id,
+			$client->service_account_id,
+			$runTool->id,
+			$payload,
+			$scenario->id,
+		);
+
+		$completed = $this->jobService->waitForCompletion($job->id, 20);
+
+		$durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+		if ($completed && in_array($completed->status, ['success', 'awaiting_input'], true)) {
+			$result = json_decode($completed->result, true) ?? [];
+			$response = [
+				'mode' => 'done',
+				'job_id' => $job->id,
+				'status' => $completed->status,
+				'result' => $result,
+			];
+
+			$this->auditService->logMcpCall($client, $token, $toolName, $completed->status, $params, $response, $job->id, $durationMs);
+			return $response;
+		}
+
+		$response = [
+			'mode' => 'queued',
+			'job_id' => $job->id,
+			'status' => $completed?->status ?? 'pending',
+		];
+
+		$this->auditService->logMcpCall($client, $token, $toolName, $response['status'], $params, $response, $job->id, $durationMs);
+		return $response;
 	}
 
 

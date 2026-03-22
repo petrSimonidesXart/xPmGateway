@@ -15,7 +15,7 @@ import type {
 	LoopStep,
 } from './types.js';
 
-const LEGACY_PM_BASE_URL = process.env.LEGACY_PM_BASE_URL || 'https://pm.interni-sit.cz';
+const FALLBACK_BASE_URL = process.env.FALLBACK_BASE_URL || 'https://pm.interni-sit.cz';
 
 /**
  * Run a complete scenario as a single job with shared browser session.
@@ -43,6 +43,8 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 	const page = await context.newPage();
 	page.setDefaultTimeout(job.timeout_seconds * 1000);
 
+	const baseUrl = job.service_account.base_url || FALLBACK_BASE_URL;
+
 	// Progress log for real-time updates
 	const progressLog: Array<{ time: string; message: string }> = [];
 
@@ -57,7 +59,7 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 
 	const ctx: ToolContext = {
 		page,
-		baseUrl: LEGACY_PM_BASE_URL,
+		baseUrl,
 		job: {
 			id: job.id,
 			service_account: job.service_account,
@@ -84,7 +86,7 @@ export async function handleRunScenario(job: Job, api: AdapterApi): Promise<void
 		ctx.log('Přihlašuji se do PM aplikace...');
 		await loginToLegacySystem(
 			page,
-			LEGACY_PM_BASE_URL,
+			baseUrl,
 			job.service_account.username,
 			job.service_account.password,
 		);

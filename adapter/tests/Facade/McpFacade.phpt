@@ -104,7 +104,7 @@ class TestJobService extends JobService
 	}
 
 
-	public function createJob(int $clientId, int $serviceAccountId, int $toolId, array $payload): ActiveRow
+	public function createJob(int $clientId, int $serviceAccountId, int $toolId, array $payload, ?int $scenarioId = null): ActiveRow
 	{
 		return $this->createdJob ?? mockRow(['id' => 'job-uuid-1']);
 	}
@@ -397,7 +397,7 @@ test('schema validation failure throws 422', function () use ($client, $token, $
 
 // === Happy path tests ===
 
-test('create_task completed within timeout returns mode done', function () use ($client, $token, $activeTool) {
+test('generic tool completed within timeout returns mode done', function () use ($client, $token, $activeTool) {
 	$completedJob = mockRow([
 		'id' => 'job-1',
 		'status' => 'success',
@@ -413,11 +413,11 @@ test('create_task completed within timeout returns mode done', function () use (
 
 	Assert::same('done', $result['mode']);
 	Assert::same('success', $result['status']);
-	Assert::same('42', $result['task_id']);
+	Assert::same('42', $result['result']['task_id']);
 });
 
 
-test('create_task not completed returns mode queued', function () use ($client, $token, $activeTool) {
+test('generic tool not completed returns mode queued', function () use ($client, $token, $activeTool) {
 	[$facade] = createFacade([
 		'tool' => $activeTool,
 		'completedJob' => null,

@@ -16,15 +16,21 @@ class JobService
 	}
 
 
-	public function createJob(int $clientId, int $serviceAccountId, int $toolId, array $payload): ActiveRow
+	public function createJob(int $clientId, int $serviceAccountId, int $toolId, array $payload, ?int $scenarioId = null): ActiveRow
 	{
-		return $this->jobRepository->create([
+		$data = [
 			'client_id' => $clientId,
 			'service_account_id' => $serviceAccountId,
 			'tool_id' => $toolId,
 			'payload' => json_encode($payload),
 			'status' => 'pending',
-		]);
+		];
+
+		if ($scenarioId !== null) {
+			$data['scenario_id'] = $scenarioId;
+		}
+
+		return $this->jobRepository->create($data);
 	}
 
 

@@ -38,6 +38,7 @@ class ServiceAccountPresenter extends BasePresenter
 		$this['accountForm']->setDefaults([
 			'name' => $account->name,
 			'username' => $account->username,
+			'base_url' => $account->base_url,
 			'is_active' => $account->is_active,
 		]);
 	}
@@ -62,6 +63,10 @@ class ServiceAccountPresenter extends BasePresenter
 		$form->addPassword('password', 'Heslo:')
 			->setRequired($this->getParameter('id') === null);
 
+		$form->addText('base_url', 'URL PM aplikace:')
+			->setRequired('Zadejte URL cílové PM aplikace.')
+			->setHtmlAttribute('placeholder', 'https://hirola.xart.cz/pmdev/public/');
+
 		$form->addCheckbox('is_active', 'Aktivní')
 			->setDefaultValue(true);
 
@@ -79,6 +84,7 @@ class ServiceAccountPresenter extends BasePresenter
 		$data = [
 			'name' => $values->name,
 			'username' => $values->username,
+			'base_url' => $values->base_url,
 			'is_active' => $values->is_active,
 		];
 

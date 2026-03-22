@@ -5,6 +5,7 @@ namespace App\Module\Mcp\Presenters;
 
 use App\Model\Facade\McpException;
 use App\Model\Facade\McpFacade;
+use App\Model\Repository\ScenarioRepository;
 use App\Model\Repository\ToolRepository;
 use App\Model\Service\AuditService;
 use App\Model\Service\AuthService;
@@ -27,6 +28,7 @@ class McpPresenter extends Presenter
 		private AuditService $auditService,
 		private RateLimitService $rateLimitService,
 		private ToolRepository $toolRepository,
+		private ScenarioRepository $scenarioRepository,
 	) {
 		parent::__construct();
 	}
@@ -143,6 +145,11 @@ class McpPresenter extends Presenter
 		$result = [];
 
 		foreach ($tools as $tool) {
+			// Skip run_scenario from direct listing — scenarios are listed separately below
+			if ($tool->name === 'run_scenario') {
+				continue;
+			}
+
 			$schemaFile = __DIR__ . '/../../../../../packages/contracts/'
 				. str_replace('_', '-', $tool->name) . '.input.json';
 
@@ -153,6 +160,19 @@ class McpPresenter extends Presenter
 			$result[] = [
 				'name' => $tool->name,
 				'description' => $tool->description,
+				'inputSchema' => $inputSchema,
+			];
+		}
+
+		// Add active scenarios as tools (prefixed with scenario_)
+		$scenarios = $this->scenarioRepository->findAllActive();
+		foreach ($scenarios as $scenario) {
+			$inputSchema = json_decode($scenario->input_schema, true)
+				?: ['type' => 'object', 'properties' => new \stdClass];
+
+			$result[] = [
+				'name' => 'scenario_' . $scenario->name,
+				'description' => $scenario->description,
 				'inputSchema' => $inputSchema,
 			];
 		}

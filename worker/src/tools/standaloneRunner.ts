@@ -6,7 +6,7 @@ import { VideoRecorder } from '../lib/video.js';
 import { toolRegistry } from './registry.js';
 import type { ToolContext } from './types.js';
 
-const LEGACY_PM_BASE_URL = process.env.LEGACY_PM_BASE_URL || 'https://pm.interni-sit.cz';
+const FALLBACK_BASE_URL = process.env.FALLBACK_BASE_URL || 'https://pm.interni-sit.cz';
 
 /** PM tools (except pm_login) require an active session. */
 function needsAutoLogin(toolName: string): boolean {
@@ -38,12 +38,14 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 	const page = await context.newPage();
 	page.setDefaultTimeout(job.timeout_seconds * 1000);
 
+	const baseUrl = job.service_account.base_url || FALLBACK_BASE_URL;
+
 	// Progress log — sent to adapter DB in real time
 	const progressLog: Array<{ time: string; message: string }> = [];
 
 	const ctx: ToolContext = {
 		page,
-		baseUrl: LEGACY_PM_BASE_URL,
+		baseUrl,
 		job: {
 			id: job.id,
 			service_account: job.service_account,
@@ -68,7 +70,7 @@ export async function runToolStandalone(job: Job, api: AdapterApi): Promise<void
 			ctx.log('Přihlašuji se do PM aplikace...');
 			await loginToLegacySystem(
 				page,
-				LEGACY_PM_BASE_URL,
+				baseUrl,
 				job.service_account.username,
 				job.service_account.password,
 			);
