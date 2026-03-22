@@ -165,6 +165,22 @@ export class AdapterApi {
     }
 
     /**
+     * Fetch lookup table from adapter (people, labels, schedule shortcuts).
+     */
+    async getLookups(category: string): Promise<Record<string, { value: string; description: string | null }>> {
+        try {
+            const response = await fetch(`${this.baseUrl}/lookups?category=${encodeURIComponent(category)}`, {
+                headers: this.getHeaders(),
+            });
+            if (!response.ok) return {};
+            const data = await response.json() as { lookups: Record<string, { value: string; description: string | null }> };
+            return data.lookups ?? {};
+        } catch {
+            return {};
+        }
+    }
+
+    /**
      * Send progress update for a running job (step_results, partial log).
      * Non-critical — failures are silently ignored.
      */

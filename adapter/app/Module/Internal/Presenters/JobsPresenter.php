@@ -6,6 +6,7 @@ namespace App\Module\Internal\Presenters;
 use App\Model\Facade\JobFacade;
 use App\Model\Facade\McpException;
 use App\Model\Repository\JobRepository;
+use App\Model\Repository\PmLookupRepository;
 use App\Model\Service\ArtifactService;
 use App\Model\Service\WorkerStatusService;
 use Nette\Application\AbortException;
@@ -21,6 +22,7 @@ class JobsPresenter extends Presenter
 	public function __construct(
 		private JobFacade $jobFacade,
 		private JobRepository $jobRepository,
+		private PmLookupRepository $lookupRepository,
 		private ArtifactService $artifactService,
 		private WorkerStatusService $workerStatusService,
 		private string $internalApiSecret,
@@ -136,6 +138,18 @@ class JobsPresenter extends Presenter
 		}
 
 		$this->sendJson(['ok' => true]);
+	}
+
+
+	/**
+	 * GET /api/internal/lookups?category=people
+	 * Returns lookup table for a category.
+	 */
+	public function actionLookups(): void
+	{
+		$category = $this->getParameter('category');
+		$lookups = $this->lookupRepository->getByCategory($category ?? '');
+		$this->sendJson(['lookups' => $lookups]);
 	}
 
 

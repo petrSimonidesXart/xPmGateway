@@ -101,6 +101,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:Lookup:*') ? active" href="{plink :Admin:Lookup:default}">
+                            <span class="nav-link-icon"><i class="ti ti-database"></i></span>
+                            <span class="nav-link-title">Číselníky</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a n:class="nav-link, $presenter->isLinkCurrent(':Admin:AuditLog:*') ? active" href="{plink :Admin:AuditLog:default}">
                             <span class="nav-link-icon"><i class="ti ti-file-text"></i></span>
                             <span class="nav-link-title">Audit log</span>

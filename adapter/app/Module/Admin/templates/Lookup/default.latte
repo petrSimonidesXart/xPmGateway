@@ -1,0 +1,90 @@
+{block title}Číselníky{/block}
+
+{block content}
+{if $isAdmin}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title"><i class="ti ti-plus me-1"></i>Přidat záznam</h3>
+    </div>
+    <div class="card-body">
+        {form addForm}
+        <div class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label" for="{$form['category']->htmlId}">Kategorie</label>
+                {input category, class => 'form-select form-select-sm'}
+            </div>
+            <div class="col-auto">
+                <label class="form-label" for="{$form['shortcut']->htmlId}">Zkratka</label>
+                {input shortcut, class => 'form-control form-control-sm', style => 'width: 80px;'}
+            </div>
+            <div class="col">
+                <label class="form-label" for="{$form['value']->htmlId}">Hodnota</label>
+                {input value, class => 'form-control form-control-sm'}
+            </div>
+            <div class="col">
+                <label class="form-label" for="{$form['description']->htmlId}">Popis</label>
+                {input description, class => 'form-control form-control-sm'}
+            </div>
+            <div class="col-auto">
+                {input send, class => 'btn btn-sm btn-primary'}
+            </div>
+        </div>
+        {if $form->hasErrors()}
+            <div class="alert alert-danger mt-2 mb-0">
+                {foreach $form->errors as $error}<div>{$error}</div>{/foreach}
+            </div>
+        {/if}
+        {/form}
+    </div>
+</div>
+{/if}
+
+{foreach $grouped as $category => $rows}
+<div class="card mb-3">
+    <div class="card-header">
+        <h3 class="card-title">
+            {if $category === 'people'}<i class="ti ti-users me-1"></i>
+            {elseif $category === 'labels'}<i class="ti ti-tag me-1"></i>
+            {elseif $category === 'schedule'}<i class="ti ti-calendar me-1"></i>
+            {/if}
+            {$categoryNames[$category] ?? $category}
+        </h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-vcenter card-table table-sm">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Zkratka</th>
+                    <th>Hodnota</th>
+                    <th>Popis</th>
+                    {if $isAdmin}<th class="w-1"></th>{/if}
+                </tr>
+            </thead>
+            <tbody>
+            {foreach $rows as $row}
+                <tr>
+                    <td><code>{$row->shortcut}</code></td>
+                    <td>{$row->value}</td>
+                    <td class="text-secondary">{$row->description ?? '—'}</td>
+                    {if $isAdmin}
+                    <td>
+                        <form method="post" action="{plink delete! id => $row->id}" class="d-inline">
+                            <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Smazat?')">
+                                <i class="ti ti-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                    {/if}
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+    </div>
+</div>
+{else}
+<div class="card">
+    <div class="card-body text-center text-secondary py-4">Žádné číselníky.</div>
+</div>
+{/foreach}
+{/block}

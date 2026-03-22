@@ -18,6 +18,7 @@
 {/block}
 
 {block content}
+{var $schemaProps = $inputSchema['properties'] ?? []}
 <div class="row row-cards">
     {* Info card *}
     <div class="col-12">
@@ -137,7 +138,6 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Vstupní data (JSON)</label>
-                        {var $schemaProps = $inputSchema['properties'] ?? []}
                         {var $exampleInput = []}
                         {foreach $schemaProps as $key => $prop}
                             {var $exampleInput[$key] = ''}

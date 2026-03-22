@@ -37,40 +37,61 @@ export async function pmCreateSubtask(ctx: ToolContext, input: Record<string, un
 	}
 	await nameField.fill(name);
 
-	// Assignee — select by label text
+	// Resolve shortcuts via lookup API
+	type Lookups = Record<string, { value: string; description: string | null }>;
+	const empty: Lookups = {};
+	const [peopleLookups, labelLookups, scheduleLookups] = await Promise.all([
+		input.assignee ? ctx.api.getLookups('people') : Promise.resolve(empty),
+		input.label ? ctx.api.getLookups('labels') : Promise.resolve(empty),
+		input.schedule ? ctx.api.getLookups('schedule') : Promise.resolve(empty),
+	]);
+
+	// Assignee — resolve shortcut (PS → Petr Simonides), then select by label
 	if (input.assignee) {
-		const assigneeVal = String(input.assignee);
-		ctx.log(`Nastavuji zodpovědnou osobu: "${assigneeVal}"`);
+		const raw = String(input.assignee);
+		const upper = raw.toUpperCase();
+		const resolved = peopleLookups[upper]?.value ?? raw;
+		ctx.log(`Nastavuji zodpovědnou osobu: "${resolved}"${resolved !== raw ? ` (zkratka ${upper})` : ''}`);
 		const assigneeSelect = ctx.page.locator('select[name$="[assignee_id]"], [id$="_select_assignee"]');
 		if (await assigneeSelect.count() > 0) {
 			try {
-				await assigneeSelect.first().selectOption({ label: assigneeVal });
+				await assigneeSelect.first().selectOption({ label: resolved });
 			} catch {
-				ctx.log(`Osoba "${assigneeVal}" nenalezena v selectu — přeskakuji`);
+				ctx.log(`Osoba "${resolved}" nenalezena v selectu — přeskakuji`);
 			}
 		} else {
 			ctx.log('Select pro zodpovědnou osobu nenalezen — přeskakuji');
 		}
 	}
 
-	// Label/tag — select by label text, use name$="[label_id]" to avoid matching page_title_widget
+	// Label — resolve shortcut (RESIT → ŘEŠIT), then select by label
 	if (input.label) {
-		const labelVal = String(input.label);
-		ctx.log(`Nastavuji štítek: "${labelVal}"`);
+		const raw = String(input.label);
+		const upper = raw.toUpperCase();
+		const resolved = labelLookups[upper]?.value ?? raw;
+		ctx.log(`Nastavuji štítek: "${resolved}"${resolved !== raw ? ` (zkratka ${upper})` : ''}`);
 		const labelSelect = ctx.page.locator('select[name$="[label_id]"]');
 		if (await labelSelect.count() > 0) {
 			try {
-				await labelSelect.first().selectOption({ label: labelVal });
+				await labelSelect.first().selectOption({ label: resolved });
 			} catch {
-				ctx.log(`Štítek "${labelVal}" nenalezen v selectu — přeskakuji`);
+				ctx.log(`Štítek "${resolved}" nenalezen v selectu — přeskakuji`);
 			}
 		} else {
 			ctx.log('Select pro štítek nenalezen — přeskakuji');
 		}
 	}
 
-	// Schedule
-	const schedule = input.schedule as string | undefined;
+	// Schedule — resolve shortcut (TT → this_week, PT → next_week)
+	let schedule = input.schedule as string | undefined;
+	if (schedule) {
+		const upper = schedule.toUpperCase();
+		if (scheduleLookups[upper]?.value) {
+			const resolved = scheduleLookups[upper].value;
+			ctx.log(`Plánování: ${resolved} (zkratka ${upper})`);
+			schedule = resolved;
+		}
+	}
 	if (schedule) {
 		if (schedule === 'this_week') {
 			ctx.log('Plánuji na tento týden');

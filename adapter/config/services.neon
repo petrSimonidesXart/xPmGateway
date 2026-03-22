@@ -42,6 +42,7 @@ services:
     - App\Model\Repository\AdminUserRepository
     - App\Model\Repository\ArtifactRepository
     - App\Model\Repository\ScenarioRepository
+    - App\Model\Repository\PmLookupRepository
 
     # Facades
     - App\Model\Facade\McpFacade

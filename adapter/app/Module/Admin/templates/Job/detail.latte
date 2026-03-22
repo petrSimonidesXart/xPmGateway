@@ -24,7 +24,7 @@
     </button>
 </form>
 {/if}
-{if !in_array($job->status, ['pending', 'processing'])}
+{if $job->status === 'success'}
 <form method="post" action="{plink duplicate! id => $job->id}" class="d-inline me-2">
     <input type="hidden" name="_csrf" value="{$presenter->getCsrfToken()}">
     <button type="submit" class="btn btn-outline-secondary">
