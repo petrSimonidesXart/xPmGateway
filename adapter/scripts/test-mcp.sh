@@ -66,12 +66,12 @@ TOOL_COUNT=$(echo "$LIST_RESPONSE" | php -r '
 echo -e "  ${GREEN}Found $TOOL_COUNT tools${NC}"
 
 echo "$LIST_RESPONSE" | php -r '
-    $json = json_decode(file_get_contents("php://stdin"), true);
-    $tools = $json["result"]["tools"] ?? [];
-    foreach ($tools as $t) {
-        $prefix = str_starts_with($t["name"], "scenario_") ? "  🔗" : "  🔧";
-        echo "$prefix {$t[\"name\"]} — {$t[\"description\"]}\n";
-    }
+$json = json_decode(file_get_contents("php://stdin"), true);
+$tools = $json["result"]["tools"] ?? [];
+foreach ($tools as $t) {
+    $p = substr($t["name"], 0, 9) === "scenario_" ? "  S" : "  T";
+    echo $p . " " . $t["name"] . " -- " . $t["description"] . "\n";
+}
 ' 2>/dev/null
 echo ""
 
