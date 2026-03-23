@@ -13,6 +13,7 @@ import { pmCloseSubtask } from './pm/closeSubtask.js';
 import { pmUpdateSubtask } from './pm/updateSubtask.js';
 import { pmTimeTrack } from './pm/timeTrack.js';
 import { pmExportCsv } from './pm/exportCsv.js';
+import { pmExportCsvReportAssignments } from './pm/exportCsvReportAssignments.js';
 
 /**
  * Registry of all available tool functions.
@@ -33,4 +34,5 @@ export const toolRegistry: Record<string, ToolFunction> = {
 	pm_update_subtask: pmUpdateSubtask,
 	pm_time_track: pmTimeTrack,
 	pm_export_csv: pmExportCsv,
+	pm_export_csv_report_assignments: pmExportCsvReportAssignments,
 };

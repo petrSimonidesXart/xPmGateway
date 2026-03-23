@@ -18,7 +18,10 @@ export async function pmExportCsv(ctx: ToolContext, input: Record<string, unknow
 			  + '.export-btn, #export-csv',
 	);
 
-	if (await exportBtn.count() === 0) {
+	// Wait for AJAX content to load before looking for export button
+	try {
+		await exportBtn.first().waitFor({ state: 'visible', timeout: 15_000 });
+	} catch {
 		return { success: false, error: `Export button not found for type: ${exportType}` };
 	}
 

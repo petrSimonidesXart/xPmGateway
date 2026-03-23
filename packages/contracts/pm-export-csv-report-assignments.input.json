@@ -1,0 +1,17 @@
+{
+	"type": "object",
+	"required": ["user_filter"],
+	"properties": {
+		"user_filter": {
+			"type": "string",
+			"description": "Filtr přiřazené osoby. Hodnota 'logged_user_responsible' = záznamy pro aktuálně přihlášeného uživatele (zodpovědný). Další hodnoty budou doplněny z číselníku."
+		},
+		"download_timeout": {
+			"type": "integer",
+			"minimum": 5000,
+			"maximum": 300000,
+			"description": "Timeout pro stažení v milisekundách (default: 60000)"
+		}
+	},
+	"additionalProperties": false
+}

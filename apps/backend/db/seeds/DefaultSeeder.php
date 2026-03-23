@@ -38,6 +38,7 @@ class DefaultSeeder extends AbstractSeed
             ['name' => 'pm_update_subtask', 'description' => 'Upraví podúkol podle jeho cesty'],
             ['name' => 'pm_time_track', 'description' => 'Vykáže odpracovaný čas na úkolu nebo podúkolu'],
             ['name' => 'pm_export_csv', 'description' => 'Exportuje úkoly nebo výkazy z projektu jako CSV soubor'],
+            ['name' => 'pm_export_csv_report_assignments', 'description' => 'Export CSV z reportu přiřazených — provede export výstupu z reportu Přiřazené na základě filtru'],
             ['name' => 'run_scenario', 'description' => 'Spustí kompozitní scénář — řetěz nástrojů s podmínkami a cykly'],
         ])->saveData();
 
