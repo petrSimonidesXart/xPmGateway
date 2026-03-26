@@ -17,6 +17,7 @@ const EXPECTED_TOOLS = [
 	'pm_time_track',
 	'pm_export_csv',
 	'pm_export_csv_report_assignments',
+	'pm_download_by_url',
 ];
 
 describe('Tool Registry', () => {
@@ -26,8 +27,8 @@ describe('Tool Registry', () => {
 		}
 	});
 
-	it('has exactly 15 tools registered', () => {
-		expect(Object.keys(toolRegistry)).toHaveLength(15);
+	it('has exactly 16 tools registered', () => {
+		expect(Object.keys(toolRegistry)).toHaveLength(16);
 	});
 
 	it('all registered tools are functions', () => {
