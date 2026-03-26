@@ -6,13 +6,27 @@
 #   - Keep under ~20 items; archive completed items to done/
 #   - Only Discovery may add items; only Delivery may update status
 
-# Example item (remove before using):
-# - id: E01S01
-#   epic: E01
-#   title: "Example story title"
-#   priority: high
-#   status: refined
-#   artefact: contexts/artefacts/stories/E01S01.story.md
-#   dependencies: []
+items:
+  - id: E01S01
+    epic: E01
+    title: "Rozšířený sběr identifikačních dat volajícího"
+    priority: high
+    status: draft
+    artefact: contexts/artefacts/stories/E01S01.story.md
+    dependencies: []
 
-items: []
+  - id: E01S02
+    epic: E01
+    title: "Opatření a enforcing na základě identifikačních dat"
+    priority: medium
+    status: draft
+    artefact: contexts/artefacts/stories/E01S02.story.md
+    dependencies: [E01S01]
+
+  - id: E02S01
+    epic: E02
+    title: "Worker pool — souběžné zpracování jobů"
+    priority: high
+    status: draft
+    artefact: contexts/artefacts/stories/E02S01.story.md
+    dependencies: []

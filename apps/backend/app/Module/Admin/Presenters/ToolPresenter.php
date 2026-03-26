@@ -28,7 +28,10 @@ class ToolPresenter extends BasePresenter
 		'pm_update_subtask' => ['pm_open_project', 'pm_open_task'],
 		'pm_time_track' => ['pm_open_project', 'pm_open_task'],
 		'pm_export_csv' => ['pm_open_project'],
+		'pm_export_csv_report_assignments' => [],
+		'pm_download_by_url' => [],
 	];
+
 
 	public function __construct(
 		private ToolRepository $toolRepository,
@@ -164,6 +167,7 @@ class ToolPresenter extends BasePresenter
 		$prereqs = self::TOOL_PREREQUISITES[$tool->name] ?? [];
 
 		// Build step templates
+		/** @var array<string, array<string, mixed>> $toolInputTemplates */
 		$toolInputTemplates = [
 			'pm_open_project' => ['query' => '{{input.project}}'],
 			'pm_open_task' => ['query' => '{{input.task}}'],
@@ -178,6 +182,8 @@ class ToolPresenter extends BasePresenter
 			'pm_update_subtask' => ['path_info' => '{{input.subtask_path}}', 'fields' => []],
 			'pm_time_track' => ['hours' => '{{input.hours}}', 'date' => '{{input.date}}'],
 			'pm_export_csv' => ['type' => 'tasks'],
+			'pm_export_csv_report_assignments' => ['user_filter' => '{{input.user_filter}}'],
+			'pm_download_by_url' => ['url' => '{{input.url}}'],
 		];
 
 		$steps = [];
@@ -201,8 +207,8 @@ class ToolPresenter extends BasePresenter
 
 		// Extract input variables from steps
 		$stepsJson = json_encode($steps);
-		preg_match_all('/\{\{input\.([a-zA-Z0-9_]+)\}\}/', $stepsJson, $matches);
-		$variables = array_unique($matches[1] ?? []);
+		preg_match_all('/\{\{input\.([a-zA-Z0-9_]+)\}\}/', (string) $stepsJson, $matches);
+		$variables = array_unique($matches[1]);
 
 		$properties = [];
 		foreach ($variables as $var) {

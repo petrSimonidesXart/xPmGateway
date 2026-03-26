@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pm_download_by_url input",
+  "description": "Stáhne soubor z PM systému přes přímý odkaz (URL). Přihlásí se a stáhne soubor jako artefakt.",
+  "type": "object",
+  "required": ["url"],
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "URL ke stažení souboru (absolutní nebo relativní k PM base URL)"
+    },
+    "download_timeout": {
+      "type": "integer",
+      "minimum": 5000,
+      "maximum": 300000,
+      "description": "Timeout pro stažení v ms (default: 60000)"
+    }
+  },
+  "additionalProperties": false
+}

@@ -112,6 +112,8 @@
         'pm_update_subtask': { input: { path_info: '', fields: {} } },
         'pm_time_track': { input: { hours: '{{input.hours}}', date: '{{input.date}}' }, vars: { hours: { type: 'number', description: 'Počet hodin' }, date: { type: 'string', description: 'Datum (YYYY/MM/DD)' } } },
         'pm_export_csv': { input: { type: 'tasks' } },
+        'pm_export_csv_report_assignments': { input: { user_filter: '{{input.user_filter}}' }, vars: { user_filter: { type: 'string', description: 'Filtr přiřazené osoby' } } },
+        'pm_download_by_url': { input: { url: '{{input.url}}' }, vars: { url: { type: 'string', description: 'URL ke stažení souboru z PM systému' } } },
     };
 
     function getSteps() {
